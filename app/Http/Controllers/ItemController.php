@@ -131,6 +131,7 @@ final class ItemController extends Controller
                 'steps_to_reproduce' => $item->steps_to_reproduce,
                 'priority' => $item->priority->value,
                 'due_date' => $item->due_date?->toDateString(),
+                'image_url' => $item->image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($item->image_path) : null,
             ],
             'options' => $this->formOptions($request),
             'defaults' => ['project_id' => $item->project_id],

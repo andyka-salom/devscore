@@ -1,4 +1,5 @@
 import { Link, useForm } from '@inertiajs/react';
+import { ImageIcon, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 
 import { FormField } from '@/components/form-field';
@@ -11,7 +12,7 @@ import type { ItemFormData, ItemFormPageProps } from '@/types/item';
 
 export default function ItemForm({ item, options, defaults }: ItemFormPageProps) {
     const isEdit = item !== null;
-    const form = useForm<ItemFormData>({
+    const form = useForm<ItemFormData & { _method?: string }>({
         project_id: item?.project_id ?? defaults.project_id ?? '',
         type: item?.type ?? 'task',
         title: item?.title ?? '',
@@ -19,13 +20,19 @@ export default function ItemForm({ item, options, defaults }: ItemFormPageProps)
         steps_to_reproduce: item?.steps_to_reproduce ?? '',
         priority: item?.priority ?? 'medium',
         due_date: item?.due_date ?? '',
+        image: null,
+        remove_image: false,
     });
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
 
         if (isEdit) {
-            form.put(`/items/${item.id}`);
+            form.transform((data) => ({
+                ...data,
+                _method: 'put',
+            }));
+            form.post(`/items/${item.id}`);
         } else {
             form.post('/items');
         }
@@ -34,7 +41,7 @@ export default function ItemForm({ item, options, defaults }: ItemFormPageProps)
     const cancelHref = isEdit ? `/items/${item.id}` : '/items';
 
     return (
-        <AppLayout title={isEdit ? `Edit ${item.code}` : 'Buat Item'}>
+        <AppLayout title={isEdit ? `Edit ${item.code}` : 'Buat Item'} backUrl={cancelHref}>
             <Card className="mx-auto max-w-3xl">
                 <CardHeader>
                     <div>
@@ -102,6 +109,34 @@ export default function ItemForm({ item, options, defaults }: ItemFormPageProps)
                                 />
                             </FormField>
                         )}
+
+                        <FormField label="Foto / Image" htmlFor="image" error={form.errors.image} hint="Maks. 5MB">
+                            {isEdit && item.image_url && !form.data.remove_image && (
+                                <div className="mb-3 relative inline-block">
+                                    <img src={item.image_url} alt="Lampiran" className="h-32 object-contain rounded-md border" />
+                                    <button
+                                        type="button"
+                                        onClick={() => form.setData('remove_image', true)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600"
+                                        title="Hapus foto"
+                                    >
+                                        <X className="size-3" />
+                                    </button>
+                                </div>
+                            )}
+                            {form.data.remove_image && (
+                                <div className="mb-3 text-sm text-amber-600 bg-amber-50 p-2 rounded-md border border-amber-100 flex items-center">
+                                    <ImageIcon className="size-4 mr-2" />
+                                    Foto saat ini akan dihapus saat disimpan.
+                                </div>
+                            )}
+                            <Input
+                                id="image"
+                                type="file"
+                                accept="image/*"
+                                onChange={(event) => form.setData('image', event.target.files?.[0] ?? null)}
+                            />
+                        </FormField>
 
                         <div className="grid gap-5 sm:grid-cols-2">
                             <FormField label="Prioritas" htmlFor="priority" error={form.errors.priority} required>

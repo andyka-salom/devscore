@@ -37,7 +37,7 @@ export default function ProjectShow({ project, summary, notes, can }: ProjectSho
     );
 
     return (
-        <AppLayout title={project.name} subtitle={`Project ${project.code}`} actions={actions}>
+        <AppLayout title={project.name} subtitle={`Project ${project.code}`} actions={actions} backUrl="/projects">
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">
                     <Card>

@@ -33,7 +33,7 @@ use Illuminate\Support\Carbon;
 #[Fillable([
     'project_id', 'type', 'title', 'description', 'steps_to_reproduce', 'priority',
     'difficulty', 'estimate_days', 'assignee_id', 'qa_id', 'milestone_id', 'due_date', 'created_by',
-    'menu', 'category', 'is_production', 'screenshot_path',
+    'menu', 'category', 'is_production', 'screenshot_path', 'image_path',
 ])]
 class Item extends Model
 {

@@ -77,22 +77,22 @@ final class ItemPolicy
     }
 
     /**
-     * Triage & perubahan estimasi hanya oleh Manager (PRD 4 & aturan bisnis 2).
+     * Triage & perubahan estimasi hanya oleh Manager dan QA (PRD 4 & aturan bisnis 2).
      */
     public function updateEstimate(User $user, Item $item): bool
     {
         return $user->is_active
-            && $user->hasRole(Role::Manager)
+            && $user->hasAnyRole(Role::Manager, Role::Qa)
             && ! in_array($item->status, [ItemStatus::Done, ItemStatus::Cancelled], true);
     }
 
     /**
-     * Penunjukan programmer & QA oleh Manager selama item belum dikerjakan.
+     * Penunjukan programmer & QA oleh Manager dan QA selama item belum dikerjakan.
      */
     public function assign(User $user, Item $item): bool
     {
         return $user->is_active
-            && $user->hasRole(Role::Manager)
+            && $user->hasAnyRole(Role::Manager, Role::Qa)
             && in_array($item->status, [ItemStatus::Backlog, ItemStatus::Assigned], true);
     }
 

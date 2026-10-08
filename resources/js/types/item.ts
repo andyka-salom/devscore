@@ -95,6 +95,8 @@ export interface ItemFormData {
     steps_to_reproduce: string;
     priority: Priority;
     due_date: string;
+    image: File | null;
+    remove_image: boolean;
 }
 
 export interface ItemFormPageProps {
@@ -108,6 +110,7 @@ export interface ItemFormPageProps {
         steps_to_reproduce: string | null;
         priority: Priority;
         due_date: string | null;
+        image_url: string | null;
     } | null;
     options: {
         projects: SelectOption<number>[];
@@ -140,6 +143,7 @@ export interface ItemDetail {
     started_at: string | null;
     approved_at: string | null;
     created_at: string | null;
+    image_url: string | null;
 }
 
 export interface AllowedTransition {

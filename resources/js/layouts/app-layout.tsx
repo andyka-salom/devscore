@@ -1,5 +1,5 @@
-import { Head } from '@inertiajs/react';
-import { Menu, PanelLeftOpen } from 'lucide-react';
+import { Head, Link } from '@inertiajs/react';
+import { Menu, ArrowLeft } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -13,6 +13,7 @@ interface AppLayoutProps {
     subtitle?: string;
     actions?: ReactNode;
     children: ReactNode;
+    backUrl?: string;
 }
 
 function readCollapsed(): boolean {
@@ -28,6 +29,7 @@ export default function AppLayout({
     subtitle = 'Sistem KPI Divisi IT Development',
     actions,
     children,
+    backUrl,
 }: AppLayoutProps) {
     const [collapsed, setCollapsed] = useState(readCollapsed);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -75,9 +77,20 @@ export default function AppLayout({
                         <Menu className="size-5" />
                     </button>
 
-                    <div className="min-w-0 flex-1">
-                        <h1 className="truncate text-base font-semibold">{title}</h1>
-                        <p className="text-muted-foreground truncate text-xs">{subtitle}</p>
+                    <div className="min-w-0 flex-1 flex items-center gap-3">
+                        {backUrl && (
+                            <Link
+                                href={backUrl}
+                                className="text-muted-foreground hover:bg-slate-100 flex items-center justify-center rounded-md p-2 transition-colors"
+                                aria-label="Kembali"
+                            >
+                                <ArrowLeft className="size-5" />
+                            </Link>
+                        )}
+                        <div>
+                            <h1 className="truncate text-base font-semibold">{title}</h1>
+                            <p className="text-muted-foreground truncate text-xs">{subtitle}</p>
+                        </div>
                     </div>
                     {actions}
                 </header>

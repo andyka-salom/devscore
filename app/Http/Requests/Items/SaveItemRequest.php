@@ -27,6 +27,8 @@ final class SaveItemRequest extends FormRequest
             'steps_to_reproduce' => ['nullable', 'string', 'max:20000'],
             'priority' => ['required', Rule::enum(Priority::class)],
             'due_date' => ['nullable', 'date_format:Y-m-d'],
+            'image' => ['nullable', 'image', 'max:5120'],
+            'remove_image' => ['nullable', 'boolean'],
         ];
     }
 
@@ -43,17 +45,18 @@ final class SaveItemRequest extends FormRequest
             'steps_to_reproduce' => 'langkah reproduksi',
             'priority' => 'prioritas',
             'due_date' => 'due date',
+            'image' => 'foto/image',
         ];
     }
 
     /**
-     * @return array{type: string, title: string, description: string|null, steps_to_reproduce: string|null, priority: string, due_date: string|null}
+     * @return array<string, mixed>
      */
     public function itemData(): array
     {
         $isBug = $this->input('type') === ItemType::Bug->value;
 
-        return [
+        $data = [
             'type' => $this->string('type')->toString(),
             'title' => $this->string('title')->trim()->toString(),
             'description' => $this->input('description'),
@@ -61,5 +64,13 @@ final class SaveItemRequest extends FormRequest
             'priority' => $this->string('priority')->toString(),
             'due_date' => $this->input('due_date'),
         ];
+
+        if ($this->hasFile('image')) {
+            $data['image_path'] = $this->file('image')->store('items', 'public');
+        } elseif ($this->boolean('remove_image')) {
+            $data['image_path'] = null;
+        }
+
+        return $data;
     }
 }

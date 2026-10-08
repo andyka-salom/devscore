@@ -23,14 +23,7 @@ final class UpdateItem
     {
         Gate::forUser($actor)->authorize('update', $item);
 
-        $item->fill([
-            'type' => $data['type'],
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'steps_to_reproduce' => $data['steps_to_reproduce'] ?? null,
-            'priority' => $data['priority'],
-            'due_date' => $data['due_date'] ?? null,
-        ])->save();
+        $item->fill($data)->save();
 
         return $item;
     }

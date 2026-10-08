@@ -22,7 +22,7 @@ final class ProjectPolicy
 
     public function create(User $user): bool
     {
-        return $user->is_active && $user->hasRole(Role::Manager);
+        return $user->is_active && $user->hasAnyRole(Role::Manager, Role::Qa);
     }
 
     public function update(User $user, Project $project): bool

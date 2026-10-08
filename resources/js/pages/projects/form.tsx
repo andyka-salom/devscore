@@ -50,7 +50,7 @@ export default function ProjectForm({ project, options }: ProjectFormPageProps) 
     const errors = form.errors as Record<string, string | undefined>;
 
     return (
-        <AppLayout title={isEdit ? `Edit ${project.code}` : 'Project Baru'}>
+        <AppLayout title={isEdit ? `Edit ${project.code}` : 'Project Baru'} backUrl={isEdit ? `/projects/${project.id}` : '/projects'}>
             <Card className="mx-auto max-w-3xl">
                 <CardHeader>
                     <div>

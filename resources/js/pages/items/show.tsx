@@ -10,7 +10,7 @@ import { NoteComposer } from '@/components/notes/note-composer';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { formatDate, formatDateTime, formatDays } from '@/lib/format';
 import type { ItemShowPageProps } from '@/types/item';
@@ -41,7 +41,7 @@ export default function ItemShow({ item, timeline, allowed_transitions, can, tri
     );
 
     return (
-        <AppLayout title={item.code} subtitle={item.project.name} actions={actions}>
+        <AppLayout title={item.code} subtitle={item.project.name} actions={actions} backUrl="/items">
             <div className="grid gap-6 lg:grid-cols-3 pb-8">
                 <div className="space-y-6 lg:col-span-2">
                     {/* Header Card */}
@@ -88,6 +88,15 @@ export default function ItemShow({ item, timeline, allowed_transitions, can, tri
                                     <Section title="Detail Bug" body={item.steps_to_reproduce} />
                                 </div>
                             )}
+
+                            {item.image_url && (
+                                <div className="bg-slate-50/50 rounded-xl p-5 border border-slate-100">
+                                    <h3 className="text-sm font-bold text-slate-800 tracking-wide uppercase mb-3">Foto / Lampiran</h3>
+                                    <a href={item.image_url} target="_blank" rel="noreferrer" className="block max-w-fit">
+                                        <img src={item.image_url} alt="Lampiran Item" className="max-w-full max-h-96 rounded-md border border-slate-200 shadow-sm" />
+                                    </a>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
@@ -132,12 +141,12 @@ export default function ItemShow({ item, timeline, allowed_transitions, can, tri
                                 className="sm:grid-cols-1 gap-y-4"
                                 entries={[
                                     { label: 'Project', value: <span className="font-medium text-slate-900">{item.project.code} · {item.project.name}</span> },
-                                    { label: 'Prioritas', value: <Badge variant="outline" className="text-xs bg-slate-50">{item.priority.label}</Badge> },
+                                    { label: 'Prioritas', value: <Badge tone="neutral" className="text-xs bg-slate-50">{item.priority.label}</Badge> },
                                     { label: 'Difficulty', value: item.difficulty ? <span className="font-semibold">{item.difficulty} Pts</span> : '—' },
                                     { label: 'Estimasi', value: item.estimate_days ? <span className="font-medium">{formatDays(item.estimate_days)}</span> : '—' },
-                                    { label: 'Programmer', value: item.assignee ? <div className="flex items-center gap-1.5"><User className="size-3.5 text-muted-foreground"/> {item.assignee.name}</div> : '—' },
-                                    { label: 'QA', value: item.qa ? <div className="flex items-center gap-1.5"><User className="size-3.5 text-muted-foreground"/> {item.qa.name}</div> : '—' },
-                                    { label: 'Dibuat oleh', value: item.creator ? <div className="flex items-center gap-1.5"><User className="size-3.5 text-muted-foreground"/> {item.creator.name}</div> : '—' },
+                                    { label: 'Programmer', value: item.assignee ? <div className="flex items-center gap-1.5"><User className="size-3.5 text-muted-foreground"/> {item.assignee}</div> : '—' },
+                                    { label: 'QA', value: item.qa ? <div className="flex items-center gap-1.5"><User className="size-3.5 text-muted-foreground"/> {item.qa}</div> : '—' },
+                                    { label: 'Dibuat oleh', value: item.creator ? <div className="flex items-center gap-1.5"><User className="size-3.5 text-muted-foreground"/> {item.creator}</div> : '—' },
                                     { label: 'Due date', value: item.due_date ? <div className="flex items-center gap-1.5"><CalendarDays className="size-3.5 text-muted-foreground"/> {formatDate(item.due_date)}</div> : '—' },
                                     { label: 'Mulai dikerjakan', value: formatDateTime(item.started_at) },
                                     { label: 'Disetujui', value: formatDateTime(item.approved_at) },

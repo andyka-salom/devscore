@@ -42,6 +42,7 @@ final class ItemDetailResource extends JsonResource
             'started_at' => $this->started_at?->toIso8601String(),
             'approved_at' => $this->approved_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
+            'image_url' => $this->image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->image_path) : null,
         ];
     }
 }
