@@ -54,6 +54,20 @@ export function titleColumn<S extends string>(sortKey?: S): DataTableColumn<Item
     };
 }
 
+export function projectProgrammerColumn<S extends string>(): DataTableColumn<ItemRow, S> {
+    return {
+        id: 'project_programmer',
+        header: 'Project | Programmer',
+        headerClassName: 'w-48',
+        cell: (item) => (
+            <div className="leading-tight">
+                <p className="line-clamp-1 font-medium text-[13px]">{item.project.name}</p>
+                <p className="text-muted-foreground mt-0.5 text-xs">{item.assignee ?? '—'}</p>
+            </div>
+        ),
+    };
+}
+
 export function estimateColumn<S extends string>(sortKey?: S): DataTableColumn<ItemRow, S> {
     return {
         id: 'estimate',

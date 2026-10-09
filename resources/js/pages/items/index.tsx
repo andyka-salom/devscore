@@ -1,5 +1,6 @@
 import { Link, router } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Filter, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import {
@@ -16,12 +17,14 @@ import {
     createdAtColumn,
     dueDateColumn,
     screenshotColumn,
+    projectProgrammerColumn,
 } from '@/components/items/item-columns';
 import { Pagination } from '@/components/pagination';
 import { SearchInput } from '@/components/search-input';
-import { buttonVariants } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog } from '@/components/ui/dialog';
 import { Select } from '@/components/ui/select';
 import { useQueryFilters } from '@/hooks/use-query-filters';
 import AppLayout from '@/layouts/app-layout';
@@ -30,6 +33,7 @@ import type { ItemIndexPageProps, ItemRow, ItemSortKey } from '@/types/item';
 const taskColumns: DataTableColumn<ItemRow, ItemSortKey>[] = [
     codeColumn((item) => item.updated_at, 'code', 'Kode & Diperbarui'),
     titleColumn('title'),
+    projectProgrammerColumn(),
     priorityColumn('priority'),
     estimateColumn('estimate'),
     statusColumn('status'),
@@ -40,6 +44,7 @@ const bugColumns: DataTableColumn<ItemRow, ItemSortKey>[] = [
     menuColumn(),
     categoryColumn(),
     bugTitleColumn('title'),
+    projectProgrammerColumn(),
     isProductionColumn(),
     priorityColumn('priority'),
     statusColumn('status'),
@@ -51,6 +56,17 @@ const bugColumns: DataTableColumn<ItemRow, ItemSortKey>[] = [
 
 export default function ItemIndex({ items, filters, options, can }: ItemIndexPageProps) {
     const updateFilters = useQueryFilters(filters);
+    const [localFilters, setLocalFilters] = useState(filters);
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+    useEffect(() => {
+        setLocalFilters(filters);
+    }, [filters]);
+
+    const applyFilters = () => {
+        updateFilters(localFilters);
+        setIsFilterOpen(false);
+    };
 
     return (
         <AppLayout title="Item">
@@ -67,76 +83,85 @@ export default function ItemIndex({ items, filters, options, can }: ItemIndexPag
                     )}
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6 mb-4">
                         <SearchInput
                             className="lg:col-span-2"
-                            value={filters.search}
-                            onSearch={(search) => updateFilters({ search })}
+                            value={localFilters.search}
+                            onSearch={(search) => setLocalFilters({ ...localFilters, search })}
                             placeholder="Cari kode (ERP-42) atau judul"
-                        />
-                        <Select
-                            aria-label="Project"
-                            options={options.projects}
-                            value={filters.project}
-                            onValueChange={(project) => updateFilters({ project })}
-                            placeholder="Semua project"
-                        />
-                        <Select
-                            aria-label="Status"
-                            options={options.statuses}
-                            value={filters.status}
-                            onValueChange={(status) => updateFilters({ status })}
-                            placeholder="Semua status"
-                        />
-                        <Select
-                            aria-label="Tipe"
-                            options={[
-                                { value: 'all', label: 'Semua Tipe' },
-                                ...options.types,
-                            ]}
-                            value={filters.type ?? 'all'}
-                            onValueChange={(type) => updateFilters({ type: type === 'all' ? null : type as any })}
-                            placeholder="Semua tipe"
                         />
                         <Select
                             aria-label="Prioritas"
                             options={options.priorities}
-                            value={filters.priority}
-                            onValueChange={(priority) => updateFilters({ priority })}
+                            value={localFilters.priority}
+                            onValueChange={(priority) => setLocalFilters({ ...localFilters, priority })}
                             placeholder="Semua prioritas"
-                        />
-                        <Select
-                            aria-label="Programmer"
-                            className="lg:col-span-2"
-                            options={options.programmers}
-                            value={filters.assignee}
-                            onValueChange={(assignee) => updateFilters({ assignee })}
-                            placeholder="Semua programmer"
                         />
                         <Checkbox
                             className="self-center"
-                            checked={filters.mine}
-                            onCheckedChange={(mine) => updateFilters({ mine })}
+                            checked={localFilters.mine}
+                            onCheckedChange={(mine) => setLocalFilters({ ...localFilters, mine })}
                             label="Hanya item saya"
                         />
+                        <Button variant="outline" onClick={() => setIsFilterOpen(true)}>
+                            <Filter className="mr-2 size-4" />
+                            Filter Tambahan
+                        </Button>
+                        <Button onClick={applyFilters}>Terapkan</Button>
                     </div>
+
+                    <Dialog open={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filter Tambahan">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium mb-1.5 block">Project</label>
+                                <Select
+                                    aria-label="Project"
+                                    options={options.projects}
+                                    value={localFilters.project}
+                                    onValueChange={(project) => setLocalFilters({ ...localFilters, project })}
+                                    placeholder="Semua project"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium mb-1.5 block">Status</label>
+                                <Select
+                                    aria-label="Status"
+                                    options={options.statuses}
+                                    value={localFilters.status}
+                                    onValueChange={(status) => setLocalFilters({ ...localFilters, status })}
+                                    placeholder="Semua status"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium mb-1.5 block">Programmer</label>
+                                <Select
+                                    aria-label="Programmer"
+                                    options={options.programmers}
+                                    value={localFilters.assignee}
+                                    onValueChange={(assignee) => setLocalFilters({ ...localFilters, assignee })}
+                                    placeholder="Semua programmer"
+                                />
+                            </div>
+                            <Button className="w-full mt-4" onClick={applyFilters}>Terapkan & Tutup</Button>
+                        </div>
+                    </Dialog>
 
                     <div className="flex space-x-2 border-b border-slate-200 mb-4">
                         <button 
                             className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === null ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            onClick={() => updateFilters({ type: null })}
+                            onClick={() => updateFilters({ ...localFilters, type: null })}
                         >
                             Semua Item
                         </button>
                         <button 
                             className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === 'task' as any ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            onClick={() => updateFilters({ type: 'task' as any })}
+                            onClick={() => updateFilters({ ...localFilters, type: 'task' as any })}
                         >
                             Task List
                         </button>
                         <button 
                             className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === 'bug' as any ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            onClick={() => updateFilters({ type: 'bug' as any })}
+                            onClick={() => updateFilters({ ...localFilters, type: 'bug' as any })}
                         >
                             Bug List
                         </button>

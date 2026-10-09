@@ -66,8 +66,15 @@ final class ItemPolicy
      */
     public function update(User $user, Item $item): bool
     {
-        return $user->is_active
-            && ($user->hasRole(Role::Manager) || $item->created_by === $user->id)
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::Manager)) {
+            return true;
+        }
+
+        return $item->created_by === $user->id
             && ! in_array($item->status, [ItemStatus::Done, ItemStatus::Cancelled], true);
     }
 
@@ -81,8 +88,15 @@ final class ItemPolicy
      */
     public function updateEstimate(User $user, Item $item): bool
     {
-        return $user->is_active
-            && $user->hasAnyRole(Role::Manager, Role::Qa)
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::Manager)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::Qa)
             && ! in_array($item->status, [ItemStatus::Done, ItemStatus::Cancelled], true);
     }
 
@@ -91,8 +105,15 @@ final class ItemPolicy
      */
     public function assign(User $user, Item $item): bool
     {
-        return $user->is_active
-            && $user->hasAnyRole(Role::Manager, Role::Qa)
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->hasRole(Role::Manager)) {
+            return true;
+        }
+
+        return $user->hasRole(Role::Qa)
             && in_array($item->status, [ItemStatus::Backlog, ItemStatus::Assigned], true);
     }
 

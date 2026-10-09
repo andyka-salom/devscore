@@ -24,7 +24,7 @@ export function formatDate(value: string | null | undefined): string {
 }
 
 export function formatDateTime(value: string | null | undefined): string {
-    return value ? dateTimeFormatter.format(new Date(value)) : '—';
+    return value ? `${dateTimeFormatter.format(new Date(value))} WIB` : '—';
 }
 
 export function formatDays(value: number | null | undefined): string {
