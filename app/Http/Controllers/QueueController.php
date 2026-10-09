@@ -19,14 +19,14 @@ final class QueueController extends Controller
     {
         $this->authorize('viewApprovalQueue', Item::class);
 
-        return $this->render('queues/approval', ItemQueueQuery::approval(), $request);
+        return $this->render('queues/approval', ItemQueueQuery::approval()->filterByProject($request->project()), $request);
     }
 
     public function qa(QueueIndexRequest $request): Response
     {
         $this->authorize('viewQaQueue', Item::class);
 
-        return $this->render('queues/qa', ItemQueueQuery::qa($request->user()), $request);
+        return $this->render('queues/qa', ItemQueueQuery::qa($request->user())->filterByProject($request->project()), $request);
     }
 
     /**
@@ -52,6 +52,9 @@ final class QueueController extends Controller
             ),
             'counts' => $query->countsByType(),
             'filters' => $request->filters(),
+            'options' => [
+                'projects' => \App\Http\Resources\FormOptions::projects($request->user()),
+            ],
         ]);
     }
 }

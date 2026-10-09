@@ -44,6 +44,7 @@ export interface QueueFilters {
     type: ItemType | null;
     sort: QueueSortKey;
     direction: SortDirection;
+    project?: number | null;
 }
 
 export type QueueCounts = Record<'all' | ItemType, number>;
@@ -53,6 +54,9 @@ export interface QueuePageProps {
     items: Paginated<ItemRow>;
     counts: QueueCounts;
     filters: QueueFilters;
+    options?: {
+        projects: SelectOption<number>[];
+    };
 }
 
 export interface AvailablePageProps {

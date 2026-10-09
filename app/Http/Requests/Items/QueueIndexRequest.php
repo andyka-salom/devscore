@@ -20,6 +20,7 @@ final class QueueIndexRequest extends FormRequest
             'type' => ['nullable', Rule::enum(ItemType::class)],
             'sort' => ['nullable', Rule::in(array_keys(ItemQueueQuery::SORTS))],
             'direction' => ['nullable', Rule::in(['asc', 'desc'])],
+            'project' => ['nullable', 'integer'],
         ];
     }
 
@@ -38,6 +39,11 @@ final class QueueIndexRequest extends FormRequest
         return $this->string('direction', 'asc')->toString();
     }
 
+    public function project(): ?int
+    {
+        return $this->filled('project') ? $this->integer('project') : null;
+    }
+
     /**
      * Filter aktif untuk dikirim balik ke frontend.
      *
@@ -49,6 +55,7 @@ final class QueueIndexRequest extends FormRequest
             'type' => $this->type()?->value,
             'sort' => $this->sort(),
             'direction' => $this->direction(),
+            'project' => $this->project(),
         ];
     }
 }

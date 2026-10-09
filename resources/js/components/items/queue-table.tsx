@@ -5,6 +5,7 @@ import { codeColumn, estimateColumn, openColumn, statusColumn, titleColumn } fro
 import { Pagination } from '@/components/pagination';
 import { SegmentedTabs, type SegmentedTab } from '@/components/segmented-tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { useQueryFilters } from '@/hooks/use-query-filters';
 import type { ItemType } from '@/types';
 import type { ItemRow, QueuePageProps, QueueSortKey } from '@/types/item';
@@ -28,7 +29,7 @@ interface QueueTableProps extends QueuePageProps {
 /**
  * Kartu antrian item (tab tipe + tabel + paginasi). Dipakai antrian Approval & QA.
  */
-export function QueueTable({ title, description, emptyMessage, items, counts, filters }: QueueTableProps) {
+export function QueueTable({ title, description, emptyMessage, items, counts, filters, options }: QueueTableProps) {
     const updateFilters = useQueryFilters(filters);
 
     const tabs: SegmentedTab<TypeTab>[] = [
@@ -39,16 +40,29 @@ export function QueueTable({ title, description, emptyMessage, items, counts, fi
 
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                     <CardTitle>{title}</CardTitle>
                     <CardDescription>{description}</CardDescription>
                 </div>
-                <SegmentedTabs
-                    tabs={tabs}
-                    value={filters.type ?? 'all'}
-                    onChange={(value) => updateFilters({ type: value === 'all' ? null : value })}
-                />
+                <div className="flex flex-col gap-3 sm:items-end">
+                    {options?.projects && (
+                        <div className="w-full sm:w-64">
+                            <Select
+                                aria-label="Project"
+                                options={options.projects}
+                                value={filters.project ?? null}
+                                onValueChange={(project) => updateFilters({ project })}
+                                placeholder="Semua project"
+                            />
+                        </div>
+                    )}
+                    <SegmentedTabs
+                        tabs={tabs}
+                        value={filters.type ?? 'all'}
+                        onChange={(value) => updateFilters({ type: value === 'all' ? null : value })}
+                    />
+                </div>
             </CardHeader>
             <CardContent>
                 <DataTable

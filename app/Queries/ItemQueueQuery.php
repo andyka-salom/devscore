@@ -32,7 +32,14 @@ final class ItemQueueQuery
     private function __construct(
         private readonly ItemStatus $status,
         private readonly ?int $qaId = null,
+        private ?int $projectId = null,
     ) {}
+
+    public function filterByProject(?int $projectId): self
+    {
+        $this->projectId = $projectId;
+        return $this;
+    }
 
     public static function approval(): self
     {
@@ -104,6 +111,7 @@ final class ItemQueueQuery
     {
         return Item::query()
             ->where('items.status', $this->status)
-            ->when($this->qaId !== null, fn (Builder $query) => $query->where('items.qa_id', $this->qaId));
+            ->when($this->qaId !== null, fn (Builder $query) => $query->where('items.qa_id', $this->qaId))
+            ->when($this->projectId !== null, fn (Builder $query) => $query->where('items.project_id', $this->projectId));
     }
 }

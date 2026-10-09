@@ -8,7 +8,7 @@ const STATUS_TONE: Record<ItemStatus, BadgeTone> = {
     on_hold: 'muted',
     ready_for_qa: 'warning',
     qa_failed: 'danger',
-    qa_passed: 'warning',
+    qa_passed: 'success',
     rejected: 'danger',
     done: 'success',
     cancelled: 'muted',
