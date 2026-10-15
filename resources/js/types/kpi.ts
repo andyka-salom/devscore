@@ -2,9 +2,17 @@ import type { EnumOption, Role } from '@/types';
 
 export type KpiGrade = 'excellent' | 'good' | 'fair' | 'needs_improvement';
 
+export interface DifficultyCount {
+    difficulty: number;
+    bug: number;
+    task: number;
+}
+
 export interface ProgrammerMetrics {
     item_count: number;
     points: number;
+    /** Tidak ada pada snapshot periode lama. */
+    by_difficulty?: DifficultyCount[];
     target_points: number;
     productivity: number | null;
     timeliness: number | null;
@@ -26,6 +34,8 @@ export interface ProgrammerKpiItem {
     id: number;
     code: string;
     title: string;
+    type?: 'bug' | 'task';
+    difficulty?: number | null;
     points: number;
     estimate_days: number;
     actual_days: number;

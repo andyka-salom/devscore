@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import { GradeBadge, ScoreValue } from '@/components/kpi/score';
 import { useLocalSort } from '@/hooks/use-local-sort';
-import type { KpiFilters, KpiRow } from '@/types/kpi';
+import type { DifficultyCount, KpiFilters, KpiRow } from '@/types/kpi';
 
 type ProgrammerRow = Extract<KpiRow, { role: { value: 'programmer' } }>;
 type QaRow = Extract<KpiRow, { role: { value: 'qa' } }>;
@@ -47,6 +47,27 @@ const scoreColumns = <T extends KpiRow, S extends string>(): DataTableColumn<T, 
 
 const percent = (value: number | null) => <ScoreValue value={value} suffix="%" />;
 
+function DifficultyBreakdown({ counts }: { counts?: DifficultyCount[] }) {
+    const active = (counts ?? []).filter((entry) => entry.bug + entry.task > 0);
+
+    if (active.length === 0) {
+        return <span className="text-muted-foreground">-</span>;
+    }
+
+    return (
+        <div className="flex flex-col gap-0.5 text-xs tabular-nums">
+            {active.map((entry) => (
+                <div key={entry.difficulty} className="flex items-center gap-2">
+                    <span className="bg-muted w-7 rounded px-1 text-center font-medium">D{entry.difficulty}</span>
+                    <span>
+                        {entry.bug} bug · {entry.task} task
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 const programmerColumns: DataTableColumn<ProgrammerRow, ProgrammerSort>[] = [
     {
         id: 'name',
@@ -64,6 +85,11 @@ const programmerColumns: DataTableColumn<ProgrammerRow, ProgrammerSort>[] = [
                 <span className="text-muted-foreground"> / {row.metrics.target_points} poin</span>
             </span>
         ),
+    },
+    {
+        id: 'difficulty',
+        header: 'Per Difficulty',
+        cell: (row) => <DifficultyBreakdown counts={row.metrics.by_difficulty} />,
     },
     {
         id: 'productivity',

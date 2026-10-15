@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Kpi;
 
 use App\Enums\ItemStatus;
+use App\Enums\ItemType;
 use App\Enums\Role;
 use App\Enums\SettingKey;
 use App\Models\Item;
@@ -81,6 +82,8 @@ final class KpiCalculator
                 'id' => $item->id,
                 'code' => $item->code,
                 'title' => $item->title,
+                'type' => $item->type->value,
+                'difficulty' => $item->difficulty,
                 'points' => $this->points->for($item->difficulty),
                 'estimate_days' => $estimate,
                 'actual_days' => $actualDays,
@@ -114,6 +117,7 @@ final class KpiCalculator
             metrics: [
                 'item_count' => $rows->count(),
                 'points' => $points,
+                'by_difficulty' => $this->byDifficulty($rows->all()),
                 'target_points' => round($target, 1),
                 'productivity' => $this->round($productivity),
                 'timeliness' => $this->round($timeliness),
@@ -122,6 +126,23 @@ final class KpiCalculator
             finalScore: $this->round($final),
             items: $rows->values()->all(),
         );
+    }
+
+    /**
+     * Jumlah bug & task per difficulty (1-5) dari item selesai.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return list<array{difficulty: int, bug: int, task: int}>
+     */
+    private function byDifficulty(array $items): array
+    {
+        $rows = collect($items);
+
+        return array_map(fn (int $level): array => [
+            'difficulty' => $level,
+            'bug' => $rows->where('difficulty', $level)->where('type', ItemType::Bug->value)->count(),
+            'task' => $rows->where('difficulty', $level)->where('type', ItemType::Task->value)->count(),
+        ], range(1, 5));
     }
 
     /**
