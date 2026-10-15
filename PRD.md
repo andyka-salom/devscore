@@ -186,15 +186,15 @@ Lihat bagian 7 untuk rumus. Fitur:
 ### 7.3 KPI Programmer (per periode)
 Himpunan **D** = item milik programmer yang masuk `done` pada periode tersebut.
 
-- **Produktivitas (P)** = min(Σ poin D ÷ target poin bulanan, 1.2) × 100
-  (dibatasi 120% agar tidak mendominasi skor)
+- **Produktivitas (P)** = min(Σ poin D ÷ target poin bulanan, 1.0) × 100
+  (dibatasi 100% agar skor akhir tidak melebihi 100)
 - **Ketepatan Waktu (T)** = jumlah item D dengan `actual_days ≤ estimate_days × (1 + toleransi)` ÷ |D| × 100
 - **Kualitas (Q)** = jumlah item D dengan `qa_fail_count = 0` dan `reject_count = 0` dan tidak di-reopen ÷ |D| × 100
 - **Skor Akhir** = w₁·P + w₂·T + w₃·Q (default w₁ = 40%, w₂ = 30%, w₃ = 30%)
 
 Jika |D| = 0, T dan Q ditampilkan "—" dan skor akhir hanya ditampilkan bila Manager mengisi keterangan (mis. cuti panjang).
 
-Ketepatan waktu dan kualitas dapat dibobot dengan poin item (opsi pengaturan), agar item sulit lebih berpengaruh.
+Ketepatan waktu dan kualitas dibobot dengan poin item (difficulty) secara default, agar item sulit lebih berpengaruh; dapat dimatikan di pengaturan (`weight_by_points`).
 
 ### 7.4 KPI QA (per periode)
 - **Throughput** = jumlah keputusan QA (pass/fail) pada periode.

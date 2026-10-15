@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enums\Role;
 use App\Enums\SettingKey;
 use App\Models\Holiday;
-use App\Models\Item;
-use App\Models\Project;
 use App\Models\User;
 use App\Services\SettingRepository;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Collection;
+use Spatie\Permission\Models\Permission;
 
 /**
  * Data contoh. Semua akun memakai password "password".
@@ -34,19 +33,20 @@ class DatabaseSeeder extends Seeder
             Holiday::query()->create(['date' => $date, 'name' => $name]);
         }
 
-        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => \App\Enums\Role::Admin->value]);
-        $managerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => \App\Enums\Role::Manager->value]);
-        $programmerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => \App\Enums\Role::Programmer->value]);
-        $qaRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => \App\Enums\Role::Qa->value]);
+        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => Role::Admin->value]);
+        $managerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => Role::Manager->value]);
+        $programmerRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => Role::Programmer->value]);
+        $qaRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => Role::Qa->value]);
+        $chiefRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => Role::Chief->value]);
 
         $permissions = [
             'menu-project', 'menu-item', 'menu-available', 'menu-qa', 'menu-approval', 'menu-kpi', 'menu-settings',
             'create-project', 'edit-project', 'delete-project',
-            'create-item', 'edit-item', 'delete-item', 'triage-item', 'assign-item', 'claim-item'
+            'create-item', 'edit-item', 'delete-item', 'triage-item', 'assign-item', 'claim-item',
         ];
 
         foreach ($permissions as $permission) {
-            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $permission]);
+            Permission::firstOrCreate(['name' => $permission]);
         }
 
         $managerRole->syncPermissions($permissions);
@@ -54,19 +54,25 @@ class DatabaseSeeder extends Seeder
 
         $programmerRole->syncPermissions([
             'menu-project', 'menu-item', 'menu-available',
-            'edit-item', 'claim-item'
+            'edit-item', 'claim-item',
         ]);
 
         $qaRole->syncPermissions([
             'menu-project', 'menu-item', 'menu-qa',
-            'create-item', 'edit-item', 'triage-item'
+            'create-item', 'edit-item', 'triage-item',
         ]);
+
+        // Chief: semua menu, tanpa izin tulis.
+        $chiefRole->syncPermissions(array_values(array_filter($permissions, fn (string $permission): bool => str_starts_with($permission, 'menu-'))));
 
         $admin = User::factory()->admin()->create(['name' => 'Super Admin', 'email' => 'admin@devscore.test']);
         $admin->assignRole($adminRole);
 
         $manager = User::factory()->manager()->create(['name' => 'Andyka Salom', 'email' => 'andykasalom@gmail.com']);
         $manager->assignRole($managerRole);
+
+        $chief = User::factory()->chief()->create(['name' => 'Chief', 'email' => 'chief@devscore.test']);
+        $chief->assignRole($chiefRole);
 
         $programmers = collect([
             ['Ilham', 'ilham@gmail.com'],
@@ -75,6 +81,7 @@ class DatabaseSeeder extends Seeder
         ])->map(function (array $u) use ($programmerRole): User {
             $user = User::factory()->programmer()->create(['name' => $u[0], 'email' => $u[1]]);
             $user->assignRole($programmerRole);
+
             return $user;
         });
 
@@ -83,6 +90,7 @@ class DatabaseSeeder extends Seeder
         ])->map(function (array $u) use ($qaRole): User {
             $user = User::factory()->qa()->create(['name' => $u[0], 'email' => $u[1]]);
             $user->assignRole($qaRole);
+
             return $user;
         });
 

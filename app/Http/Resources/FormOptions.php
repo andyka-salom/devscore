@@ -45,7 +45,7 @@ final class FormOptions
      */
     public static function projects(User $user): array
     {
-        $query = $user->hasAnyRole(Role::Manager, Role::Admin)
+        $query = $user->hasAnyRole(Role::Manager, Role::Admin, Role::Chief)
             ? Project::query()
             : $user->projects()->getQuery();
 

@@ -17,7 +17,7 @@ final class ProjectPolicy
 
     public function view(User $user, Project $project): bool
     {
-        return $user->hasAnyRole(Role::Manager, Role::Admin) || $project->hasMember($user);
+        return $user->hasAnyRole(Role::Manager, Role::Admin, Role::Chief) || $project->hasMember($user);
     }
 
     public function create(User $user): bool

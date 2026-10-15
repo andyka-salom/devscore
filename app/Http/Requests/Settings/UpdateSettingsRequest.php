@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace App\Http\Requests\Settings;
 
 use App\Enums\SettingKey;
+use App\Models\KpiPeriod;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class UpdateSettingsRequest extends FormRequest
 {
+    /**
+     * Otorisasi sebelum validasi, agar user tanpa izin mendapat 403, bukan error validasi.
+     */
+    public function authorize(): bool
+    {
+        return $this->user()?->can('manageSettings', KpiPeriod::class) ?? false;
+    }
+
     /**
      * @return array<string, mixed>
      */

@@ -19,17 +19,17 @@ final class ItemPolicy
 
     public function viewApprovalQueue(User $user): bool
     {
-        return $user->hasRole(Role::Manager);
+        return $user->hasAnyRole(Role::Manager, Role::Chief);
     }
 
     public function viewQaQueue(User $user): bool
     {
-        return $user->hasAnyRole(Role::Qa, Role::Manager);
+        return $user->hasAnyRole(Role::Qa, Role::Manager, Role::Chief);
     }
 
     public function viewAvailable(User $user): bool
     {
-        return $user->hasRole(Role::Programmer) && $this->settings->bool(SettingKey::SelfAssignEnabled);
+        return $user->hasAnyRole(Role::Programmer, Role::Chief) && $this->settings->bool(SettingKey::SelfAssignEnabled);
     }
 
     public function viewAny(User $user): bool
@@ -39,7 +39,7 @@ final class ItemPolicy
 
     public function view(User $user, Item $item): bool
     {
-        if ($user->hasAnyRole(Role::Manager, Role::Admin)) {
+        if ($user->hasAnyRole(Role::Manager, Role::Admin, Role::Chief)) {
             return true;
         }
 
@@ -72,6 +72,11 @@ final class ItemPolicy
 
         if ($user->hasRole(Role::Manager)) {
             return true;
+        }
+
+        // Chief hanya boleh melihat.
+        if ($user->hasRole(Role::Chief)) {
+            return false;
         }
 
         return $item->created_by === $user->id

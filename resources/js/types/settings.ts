@@ -25,4 +25,5 @@ export interface Holiday {
 export interface SettingsPageProps {
     settings: KpiSettings;
     holidays: Holiday[];
+    can: { manage: boolean };
 }

@@ -35,7 +35,7 @@ final class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->when(! $user->hasAnyRole(Role::Manager, Role::Admin), fn (Builder $query) => $query
+            ->when(! $user->hasAnyRole(Role::Manager, Role::Admin, Role::Chief), fn (Builder $query) => $query
                 ->whereHas('members', fn (Builder $members) => $members->whereKey($user->id)))
             ->withCount([
                 'members',
@@ -58,7 +58,7 @@ final class ProjectController extends Controller
         $user = $request->user();
 
         $projects = Project::query()
-            ->when(! $user->hasAnyRole(Role::Manager, Role::Admin), fn (Builder $query) => $query
+            ->when(! $user->hasAnyRole(Role::Manager, Role::Admin, Role::Chief), fn (Builder $query) => $query
                 ->whereHas('members', fn (Builder $members) => $members->whereKey($user->id)))
             ->orderBy('start_date')
             ->get();

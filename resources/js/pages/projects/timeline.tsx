@@ -65,7 +65,7 @@ export default function ProjectTimeline({ projects }: TimelineProps) {
     const totalDays = Math.round((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)) || 1;
 
     const months: { year: number; month: string; days: number }[] = [];
-    let current = new Date(minDate);
+    const current = new Date(minDate);
     while (current < maxDate) {
         const year = current.getFullYear();
         const month = current.toLocaleString('en-US', { month: 'long' });

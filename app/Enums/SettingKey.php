@@ -34,7 +34,7 @@ enum SettingKey: string
             self::OnTimeTolerance => 0.1,
             self::MonthlyTargetPoints => 20,
             self::ProgrammerWeights => ['productivity' => 0.4, 'timeliness' => 0.3, 'quality' => 0.3],
-            self::WeightByPoints => false,
+            self::WeightByPoints => true,
             self::QaMonthlyThroughputTarget => 40,
             self::QaReviewTargetHours => 8,
             self::QaWeights => ['throughput' => 0.3, 'speed' => 0.3, 'accuracy' => 0.4],

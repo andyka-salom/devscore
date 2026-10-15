@@ -60,7 +60,7 @@ class HandleInertiaRequests extends Middleware
                 ? (new ItemListQuery($user))->availableQuery()->count()
                 : null,
             'kpi' => $user->can('viewAny', KpiPeriod::class),
-            'settings' => $user->can('manageSettings', KpiPeriod::class),
+            'settings' => $user->can('viewSettings', KpiPeriod::class),
         ];
     }
 }

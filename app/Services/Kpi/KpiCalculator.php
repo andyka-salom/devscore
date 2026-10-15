@@ -19,7 +19,8 @@ use Illuminate\Support\Collection;
  */
 final class KpiCalculator
 {
-    private const float PRODUCTIVITY_CAP = 1.2;
+    /** Produktivitas & throughput maksimal 100% agar skor akhir tidak melebihi 100. */
+    private const float PRODUCTIVITY_CAP = 1.0;
 
     public function __construct(
         private readonly SettingRepository $settings,

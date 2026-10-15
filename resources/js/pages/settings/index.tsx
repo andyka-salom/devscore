@@ -19,7 +19,7 @@ const DIFFICULTY_KEYS = ['1', '2', '3', '4', '5'] as const;
 const toPercent = (value: number) => Math.round(value * 1000) / 10;
 const fromPercent = (value: string) => (value === '' ? 0 : Number(value) / 100);
 
-export default function Settings({ settings, holidays }: SettingsPageProps) {
+export default function Settings({ settings, holidays, can }: SettingsPageProps) {
     const form = useForm<KpiSettings>(settings);
     const errors = form.errors as Record<string, string | undefined>;
 
@@ -33,7 +33,8 @@ export default function Settings({ settings, holidays }: SettingsPageProps) {
 
     return (
         <AppLayout title="Pengaturan" subtitle="KPI, workflow, dan kalender kerja">
-            <form onSubmit={submit} className="space-y-6">
+            <form onSubmit={submit}>
+                <fieldset disabled={!can.manage} className="space-y-6">
                 <Section title="Poin per difficulty" description="Dipakai untuk produktivitas KPI dan progres project.">
                     <div className="grid grid-cols-5 gap-3">
                         {DIFFICULTY_KEYS.map((key) => (
@@ -201,15 +202,18 @@ export default function Settings({ settings, holidays }: SettingsPageProps) {
                     <InputError message={errors.work_days} />
                 </Section>
 
-                <div className="flex justify-end">
-                    <Button type="submit" disabled={form.processing || !form.isDirty}>
-                        Simpan Pengaturan
-                    </Button>
-                </div>
+                {can.manage && (
+                    <div className="flex justify-end">
+                        <Button type="submit" disabled={form.processing || !form.isDirty}>
+                            Simpan Pengaturan
+                        </Button>
+                    </div>
+                )}
+                </fieldset>
             </form>
 
             <div className="mt-6">
-                <HolidaySection holidays={holidays} />
+                <HolidaySection holidays={holidays} canManage={can.manage} />
             </div>
         </AppLayout>
     );
@@ -270,7 +274,7 @@ function WeightInputs<K extends string>({
 
 import { HolidayCalendar } from '@/components/holiday-calendar';
 
-function HolidaySection({ holidays }: { holidays: SettingsPageProps['holidays'] }) {
+function HolidaySection({ holidays, canManage }: { holidays: SettingsPageProps['holidays']; canManage: boolean }) {
     const form = useForm();
 
     const submitSync = () => {
@@ -279,18 +283,20 @@ function HolidaySection({ holidays }: { holidays: SettingsPageProps['holidays'] 
 
     return (
         <Section title="Hari libur & cuti bersama" description="Tanggal ini tidak dihitung sebagai hari kerja.">
-            <div className="flex justify-end mb-4">
-                <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={submitSync}
-                    disabled={form.processing}
-                >
-                    Sync dari Kalender Google
-                </Button>
-            </div>
+            {canManage && (
+                <div className="flex justify-end mb-4">
+                    <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={submitSync}
+                        disabled={form.processing}
+                    >
+                        Sync dari Kalender Google
+                    </Button>
+                </div>
+            )}
             
-            <HolidayCalendar holidays={holidays} />
+            <HolidayCalendar holidays={holidays} canManage={canManage} />
         </Section>
     );
 }

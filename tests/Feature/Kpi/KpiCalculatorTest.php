@@ -64,19 +64,35 @@ it('menghitung KPI programmer sesuai rumus PRD 7.3', function (): void {
         'points' => 8,
         'target_points' => 20.0,
         'productivity' => 40.0,
-        'timeliness' => 50.0,
-        'quality' => 50.0,
-    ])->and($result->finalScore)->toBe(46.0);
+        // dibobot poin difficulty (default): 5 dari 8 poin tepat waktu & bersih
+        'timeliness' => 62.5,
+        'quality' => 62.5,
+    ])->and($result->finalScore)->toBe(53.5);
 
     expect(collect($result->items)->pluck('actual_days')->all())->toBe([1.0, 2.0]);
 });
 
-it('membatasi produktivitas pada 120%', function (): void {
+it('menghitung ketepatan waktu & kualitas per item bila bobot poin dimatikan', function (): void {
+    setSetting(SettingKey::WeightByPoints, false);
+    $programmer = User::factory()->programmer()->create();
+    doneItem($programmer, '2026-10-05 08:00', '2026-10-05 17:00', ['difficulty' => 4]);
+    doneItem($programmer, '2026-10-05 08:00', '2026-10-06 17:00', ['qa_fail_count' => 1, 'approved_at' => '2026-10-21 10:00']);
+
+    $result = kpi()->programmer($programmer, ...october());
+
+    expect($result->metrics)->toMatchArray(['timeliness' => 50.0, 'quality' => 50.0])
+        ->and($result->finalScore)->toBe(46.0);
+});
+
+it('membatasi produktivitas pada 100%', function (): void {
     setSetting(SettingKey::MonthlyTargetPoints, 4);
     $programmer = User::factory()->programmer()->create();
     doneItem($programmer, '2026-10-05 08:00', '2026-10-05 10:00', ['difficulty' => 5]);
 
-    expect(kpi()->programmer($programmer, ...october())->metrics['productivity'])->toBe(120.0);
+    $result = kpi()->programmer($programmer, ...october());
+
+    expect($result->metrics['productivity'])->toBe(100.0)
+        ->and($result->finalScore)->toBe(100.0);
 });
 
 it('menampilkan T, Q, dan skor akhir null bila tidak ada item selesai', function (): void {
@@ -120,8 +136,7 @@ it('tidak menghitung waktu on_hold sebagai durasi kerja', function (): void {
     expect($row['actual_days'])->toBe(0.33)->and($row['on_time'])->toBeTrue();
 });
 
-it('membobot ketepatan waktu dengan poin bila diaktifkan', function (): void {
-    setSetting(SettingKey::WeightByPoints, true);
+it('membobot ketepatan waktu dengan poin difficulty', function (): void {
     $programmer = User::factory()->programmer()->create();
     doneItem($programmer, '2026-10-05 08:00', '2026-10-05 17:00', ['difficulty' => 5]); // 8 poin, tepat
     doneItem($programmer, '2026-10-05 08:00', '2026-10-07 17:00', ['difficulty' => 2]); // 2 poin, terlambat

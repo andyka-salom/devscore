@@ -16,9 +16,11 @@ const MONTHS = [
 
 interface HolidayCalendarProps {
     holidays: Holiday[];
+    /** false = hanya lihat (tanpa tambah/hapus). */
+    canManage?: boolean;
 }
 
-export function HolidayCalendar({ holidays }: HolidayCalendarProps) {
+export function HolidayCalendar({ holidays, canManage = true }: HolidayCalendarProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -56,20 +58,23 @@ export function HolidayCalendar({ holidays }: HolidayCalendarProps) {
                     <span className={`text-sm font-medium ${isToday ? 'bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center' : 'text-slate-600'}`}>
                         {day}
                     </span>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-6 w-6 opacity-0 group-hover:opacity-100" 
-                        onClick={() => setSelectedDate(dateStr)}
-                    >
-                        <Plus className="h-4 w-4 text-slate-400" />
-                    </Button>
+                    {canManage && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 opacity-0 group-hover:opacity-100" 
+                            onClick={() => setSelectedDate(dateStr)}
+                        >
+                            <Plus className="h-4 w-4 text-slate-400" />
+                        </Button>
+                    )}
                 </div>
                 
                 <div className="flex flex-col gap-1 mt-1">
                     {dayHolidays.map(holiday => (
                         <div key={holiday.id} className="text-xs bg-red-100 text-red-700 px-1.5 py-1 rounded truncate flex justify-between items-center group/holiday">
                             <span className="truncate" title={holiday.name}>{holiday.name}</span>
+                            {canManage && (
                             <ConfirmDialog
                                 title="Hapus hari libur?"
                                 description={`${holiday.name} akan dihitung sebagai hari kerja.`}
@@ -88,6 +93,7 @@ export function HolidayCalendar({ holidays }: HolidayCalendarProps) {
                                     </button>
                                 )}
                             />
+                            )}
                         </div>
                     ))}
                 </div>

@@ -17,11 +17,12 @@ use Inertia\Response;
 
 final class SettingController extends Controller
 {
-    public function edit(SettingRepository $settings): Response
+    public function edit(Request $request, SettingRepository $settings): Response
     {
-        $this->authorize('manageSettings', KpiPeriod::class);
+        $this->authorize('viewSettings', KpiPeriod::class);
 
         return Inertia::render('settings/index', [
+            'can' => ['manage' => $request->user()->can('manageSettings', KpiPeriod::class)],
             'settings' => $settings->all(),
             'holidays' => Holiday::query()
                 ->where('date', '>=', now()->subYear()->startOfYear())
@@ -75,21 +76,21 @@ final class SettingController extends Controller
         try {
             $url = 'https://calendar.google.com/calendar/ical/en.indonesian%23holiday%40group.v.calendar.google.com/public/basic.ics';
             $content = file_get_contents($url);
-            
+
             if ($content !== false) {
                 if (preg_match_all('/BEGIN:VEVENT.*?DTSTART(?:;VALUE=DATE)?:(\d{8}).*?SUMMARY:(.*?)\r?\n/s', $content, $matches, PREG_SET_ORDER)) {
                     $count = 0;
                     foreach ($matches as $match) {
                         $dateStr = $match[1];
                         $name = trim($match[2]);
-                        
+
                         // Parse date YYYYMMDD
                         $date = sprintf('%s-%s-%s', substr($dateStr, 0, 4), substr($dateStr, 4, 2), substr($dateStr, 6, 2));
-                        
+
                         // Ignore holidays more than 1 year ago to avoid clutter
                         if (now()->subYear()->startOfYear()->format('Y-m-d') <= $date) {
                             $holiday = Holiday::firstOrNew(['date' => $date]);
-                            if (!$holiday->exists) {
+                            if (! $holiday->exists) {
                                 $holiday->name = $name;
                                 $holiday->save();
                                 $count++;

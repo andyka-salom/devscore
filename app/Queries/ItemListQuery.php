@@ -82,7 +82,8 @@ final class ItemListQuery
             ->whereNull('items.assignee_id')
             ->whereNotNull('items.difficulty')
             ->whereNotNull('items.estimate_days')
-            ->whereIn('items.project_id', $this->viewer->projects()->select('projects.id'));
+            ->when(! $this->viewer->hasRole(Role::Chief), fn (Builder $query) => $query
+                ->whereIn('items.project_id', $this->viewer->projects()->select('projects.id')));
     }
 
     /**
@@ -92,7 +93,7 @@ final class ItemListQuery
     {
         $query = Item::query();
 
-        if ($this->viewer->hasAnyRole(Role::Manager, Role::Admin)) {
+        if ($this->viewer->hasAnyRole(Role::Manager, Role::Admin, Role::Chief)) {
             return $query;
         }
 

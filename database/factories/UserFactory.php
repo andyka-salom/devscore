@@ -58,6 +58,14 @@ class UserFactory extends Factory
         return $this->state(['role' => Role::Admin]);
     }
 
+    /**
+     * Chief: akses semua menu, hanya lihat.
+     */
+    public function chief(): static
+    {
+        return $this->state(['role' => Role::Chief]);
+    }
+
     public function inactive(): static
     {
         return $this->state(['is_active' => false]);

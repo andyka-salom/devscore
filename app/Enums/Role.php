@@ -10,6 +10,7 @@ enum Role: string implements HasLabel
     case Qa = 'qa';
     case Manager = 'manager';
     case Admin = 'admin';
+    case Chief = 'chief';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum Role: string implements HasLabel
             self::Qa => 'QA',
             self::Manager => 'Manager',
             self::Admin => 'Administrator',
+            self::Chief => 'Chief',
         };
     }
 }

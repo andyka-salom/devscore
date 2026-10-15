@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Models\Item;
 use App\Models\KpiPeriod;
 use App\Models\Project;
+use App\Models\User;
 use App\Policies\KpiPolicy;
 use App\Services\SettingRepository;
 use Illuminate\Database\Eloquent\Model;
@@ -31,14 +32,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Model::preventLazyLoading(! $this->app->isProduction());
 
-        Gate::before(function ($user, $ability) {
-            return $user->hasAnyRole([\App\Enums\Role::Admin, \App\Enums\Role::Manager]) ? true : null;
-        });
-
         Gate::policy(KpiPeriod::class, KpiPolicy::class);
 
         Relation::enforceMorphMap([
-            'user' => \App\Models\User::class,
+            'user' => User::class,
             'item' => Item::class,
             'project' => Project::class,
         ]);
