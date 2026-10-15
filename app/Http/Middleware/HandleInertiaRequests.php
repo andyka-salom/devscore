@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Enums\FeatureRequestStatus;
 use App\Http\Resources\EnumOption;
+use App\Models\FeatureRequest;
 use App\Models\Item;
 use App\Models\KpiPeriod;
 use App\Models\User;
@@ -58,6 +60,12 @@ class HandleInertiaRequests extends Middleware
             'qa' => $user->can('viewQaQueue', Item::class) ? ItemQueueQuery::qa($user)->count() : null,
             'available' => $user->can('viewAvailable', Item::class)
                 ? (new ItemListQuery($user))->availableQuery()->count()
+                : null,
+            // Manager: jumlah yang menunggu persetujuan; peran lain: tidak ada badge.
+            'featureRequests' => $user->can('viewAny', FeatureRequest::class)
+                ? ($user->can('viewReviewQueue', FeatureRequest::class)
+                    ? FeatureRequest::query()->where('status', FeatureRequestStatus::Pending)->count()
+                    : true)
                 : null,
             'kpi' => $user->can('viewAny', KpiPeriod::class),
             'settings' => $user->can('viewSettings', KpiPeriod::class),

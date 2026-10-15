@@ -4,16 +4,18 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FeatureRequestController;
+use App\Http\Controllers\FeatureRequestReviewController;
 use App\Http\Controllers\ItemClaimController;
 use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ItemTransitionController;
 use App\Http\Controllers\ItemTriageController;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\SettingController;
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
@@ -46,6 +48,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::put('notes/{note}', [NoteController::class, 'update'])->name('notes.update');
     Route::delete('notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');
+
+    Route::get('feature-requests', [FeatureRequestController::class, 'index'])->name('feature-requests.index');
+    Route::get('feature-requests/create', [FeatureRequestController::class, 'create'])->name('feature-requests.create');
+    Route::post('feature-requests', [FeatureRequestController::class, 'store'])->name('feature-requests.store');
+    Route::post('feature-requests/{featureRequest}/approve', [FeatureRequestReviewController::class, 'approve'])->name('feature-requests.approve');
+    Route::post('feature-requests/{featureRequest}/reject', [FeatureRequestReviewController::class, 'reject'])->name('feature-requests.reject');
 
     Route::get('kpi', [KpiController::class, 'index'])->name('kpi.index');
     Route::post('kpi/periods', [KpiController::class, 'close'])->name('kpi.periods.close');

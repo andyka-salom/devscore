@@ -28,6 +28,17 @@ final class CreateItem
     {
         Gate::forUser($creator)->authorize('create', [Item::class, $project]);
 
+        return $this->store($project, $creator, $data);
+    }
+
+    /**
+     * Simpan item tanpa cek otorisasi; pemanggil bertanggung jawab atas izin
+     * (mis. ApproveFeatureRequest yang sudah diotorisasi Manager).
+     *
+     * @param  array{type: string, title: string, description?: string|null, steps_to_reproduce?: string|null, priority: string, due_date?: string|null}  $data
+     */
+    public function store(Project $project, User $creator, array $data): Item
+    {
         return DB::transaction(function () use ($project, $creator, $data): Item {
             // Kunci baris project agar nomor item per project tidak bentrok.
             Project::query()->lockForUpdate()->findOrFail($project->getKey());
