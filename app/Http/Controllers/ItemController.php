@@ -10,9 +10,11 @@ use App\Actions\Items\UpdateItem;
 use App\Enums\ItemStatus;
 use App\Enums\ItemType;
 use App\Enums\Priority;
+use App\Enums\QaFinding;
 use App\Enums\Role;
 use App\Http\Requests\Items\ItemIndexRequest;
 use App\Http\Requests\Items\SaveItemRequest;
+use App\Http\Resources\EnumOption;
 use App\Http\Resources\FormOptions;
 use App\Http\Resources\ItemDetailResource;
 use App\Http\Resources\ItemTimeline;
@@ -22,6 +24,7 @@ use App\Models\Project;
 use App\Queries\ItemListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -93,6 +96,7 @@ final class ItemController extends Controller
                 'value' => $to->value,
                 'label' => $item->status->transitionLabel($to),
                 'requires_reason' => $item->status->requiresReason($to),
+                'qa_findings' => array_map(EnumOption::of(...), QaFinding::allowedFor($to)),
             ], $transitions->allowedFor($item, $user)),
             'can' => [
                 'update' => $user->can('update', $item),
@@ -131,7 +135,7 @@ final class ItemController extends Controller
                 'steps_to_reproduce' => $item->steps_to_reproduce,
                 'priority' => $item->priority->value,
                 'due_date' => $item->due_date?->toDateString(),
-                'image_url' => $item->image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($item->image_path) : null,
+                'image_url' => $item->image_path ? Storage::disk('public')->url($item->image_path) : null,
             ],
             'options' => $this->formOptions($request),
             'defaults' => ['project_id' => $item->project_id],

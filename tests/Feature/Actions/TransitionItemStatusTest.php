@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\Items\TransitionItemStatus;
 use App\Enums\ItemStatus;
+use App\Enums\QaFinding;
 use App\Enums\SettingKey;
 use App\Models\Item;
 use App\Models\ItemStatusLog;
@@ -223,4 +224,35 @@ it('menjaga log status tetap append-only', function (): void {
 
     expect(fn () => $log->update(['reason' => 'ubah']))->toThrow(LogicException::class)
         ->and(fn () => $log->delete())->toThrow(LogicException::class);
+});
+
+it('mencatat kategori bug pada keputusan QA', function (): void {
+    $item = Item::factory()->readyForQa()->create();
+
+    app(TransitionItemStatus::class)->handle($item, ItemStatus::QaFailed, qaOf($item), 'Data hilang', null, QaFinding::Critical);
+
+    expect($item->statusLogs()->latest('id')->firstOrFail()->qa_finding)->toBe(QaFinding::Critical);
+});
+
+it('memakai kategori bug default bila tidak diisi', function (): void {
+    $passed = Item::factory()->readyForQa()->create();
+    $failed = Item::factory()->readyForQa()->create();
+    $done = Item::factory()->qaPassed()->create();
+
+    transition($passed, ItemStatus::QaPassed, qaOf($passed));
+    transition($failed, ItemStatus::QaFailed, qaOf($failed), 'Gagal');
+    transition($done, ItemStatus::Done, manager());
+
+    expect($passed->statusLogs()->latest('id')->firstOrFail()->qa_finding)->toBe(QaFinding::None)
+        ->and($failed->statusLogs()->latest('id')->firstOrFail()->qa_finding)->toBe(QaFinding::Major)
+        ->and($done->statusLogs()->latest('id')->firstOrFail()->qa_finding)->toBeNull();
+});
+
+it('menolak kategori bug yang tidak sesuai keputusan QA', function (): void {
+    $item = Item::factory()->readyForQa()->create();
+
+    expect(fn () => app(TransitionItemStatus::class)->handle($item, ItemStatus::QaPassed, qaOf($item), null, null, QaFinding::Critical))
+        ->toThrow(ValidationException::class);
+
+    expect($item->fresh()->status)->toBe(ItemStatus::ReadyForQa);
 });

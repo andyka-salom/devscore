@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Hand, Pencil, Trash2, CalendarDays, User, Clock, AlertCircle } from 'lucide-react';
 
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -12,10 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import { backUrlFrom } from '@/lib/back-url';
 import { formatDate, formatDateTime, formatDays } from '@/lib/format';
 import type { ItemShowPageProps } from '@/types/item';
 
 export default function ItemShow({ item, timeline, allowed_transitions, can, triage }: ItemShowPageProps) {
+    // Kembali ke daftar asal (approval, QA, item halaman N, dst.); default daftar item.
+    const backUrl = backUrlFrom(usePage().url, '/items');
+
     const actions = (
         <div className="flex items-center gap-2">
             {can.update && (
@@ -41,7 +45,7 @@ export default function ItemShow({ item, timeline, allowed_transitions, can, tri
     );
 
     return (
-        <AppLayout title={item.code} subtitle={item.project.name} actions={actions} backUrl="/items">
+        <AppLayout title={item.code} subtitle={item.project.name} actions={actions} backUrl={backUrl}>
             <div className="grid gap-6 lg:grid-cols-3 pb-8">
                 <div className="space-y-6 lg:col-span-2">
                     {/* Header Card */}

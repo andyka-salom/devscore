@@ -35,7 +35,12 @@ const scoreColumns = <T extends KpiRow, S extends string>(): DataTableColumn<T, 
         header: 'Skor Akhir',
         sortKey: 'final' as S,
         headerClassName: 'w-28',
-        cell: (row) => <ScoreValue value={row.final_score} className="text-base font-semibold" />,
+        cell: (row) => (
+            <span>
+                <ScoreValue value={row.final_score} className="text-base font-semibold" />
+                {row.provisional && <span className="text-muted-foreground block text-xs">sementara</span>}
+            </span>
+        ),
     },
     {
         id: 'grade',
@@ -95,7 +100,20 @@ const programmerColumns: DataTableColumn<ProgrammerRow, ProgrammerSort>[] = [
         id: 'productivity',
         header: 'Produktivitas',
         sortKey: 'productivity',
-        cell: (row) => percent(row.metrics.productivity),
+        cell: (row) => {
+            const actual = row.metrics.productivity_actual ?? null;
+
+            return (
+                <span>
+                    {percent(row.metrics.productivity)}
+                    {actual !== null && actual > 100 && (
+                        <span className="text-muted-foreground block text-xs">
+                            realisasi <ScoreValue value={actual} suffix="%" />
+                        </span>
+                    )}
+                </span>
+            );
+        },
     },
     { id: 'timeliness', header: 'Tepat Waktu', sortKey: 'timeliness', cell: (row) => percent(row.metrics.timeliness) },
     { id: 'quality', header: 'Kualitas', sortKey: 'quality', cell: (row) => percent(row.metrics.quality) },

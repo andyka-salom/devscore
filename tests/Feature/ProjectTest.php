@@ -74,7 +74,7 @@ it('programmer hanya melihat project keanggotaannya', function (): void {
 
 it('menghitung progres project dari poin done, mengabaikan item cancelled', function (): void {
     $project = Project::factory()->create();
-    Item::factory()->done()->create(['project_id' => $project->id, 'difficulty' => 4]); // 5 poin
+    Item::factory()->done()->create(['project_id' => $project->id, 'difficulty' => 5]); // 5 poin
     Item::factory()->inProgress()->create(['project_id' => $project->id, 'difficulty' => 3]); // 3 poin
     Item::factory()->cancelled()->create(['project_id' => $project->id, 'difficulty' => 5]);
 

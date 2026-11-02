@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { withBack } from '@/lib/back-url';
 
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import { codeColumn, estimateColumn, openColumn, priorityColumn, titleColumn } from '@/components/items/item-columns';
@@ -49,7 +50,7 @@ export default function AvailableItems({ items, filters }: AvailablePageProps) {
                         rows={items.data}
                         getRowKey={(item) => item.id}
                         numberFrom={items.meta.from}
-                        onRowClick={(item) => router.visit(item.url)}
+                        onRowClick={(item) => router.visit(withBack(item.url))}
                         emptyMessage="Belum ada task yang bisa di-claim."
                     />
                     <Pagination paginator={items} />

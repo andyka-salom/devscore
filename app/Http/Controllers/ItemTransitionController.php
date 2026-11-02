@@ -14,7 +14,7 @@ final class ItemTransitionController extends Controller
 {
     public function __invoke(TransitionItemRequest $request, Item $item, TransitionItemStatus $transition): RedirectResponse
     {
-        $updated = $transition->handle($item, $request->targetStatus(), $request->user(), $request->reason(), $request->attachment());
+        $updated = $transition->handle($item, $request->targetStatus(), $request->user(), $request->reason(), $request->attachment(), $request->qaFinding());
 
         Inertia::flash('success', "Status diubah menjadi {$updated->status->label()}.");
 

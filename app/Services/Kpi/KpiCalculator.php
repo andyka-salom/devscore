@@ -6,6 +6,7 @@ namespace App\Services\Kpi;
 
 use App\Enums\ItemStatus;
 use App\Enums\ItemType;
+use App\Enums\QaFinding;
 use App\Enums\Role;
 use App\Enums\SettingKey;
 use App\Models\Item;
@@ -16,11 +17,11 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
 /**
- * Satu-satunya tempat rumus KPI (PRD 7). Rentang [from, to] inklusif per tanggal.
+ * Satu-satunya tempat rumus KPI. Rentang [from, to] inklusif per tanggal.
  */
 final class KpiCalculator
 {
-    /** Produktivitas & throughput maksimal 100% agar skor akhir tidak melebihi 100. */
+    /** Kontribusi produktivitas & throughput ke skor akhir maksimal 100%. */
     private const float PRODUCTIVITY_CAP = 1.0;
 
     public function __construct(
@@ -54,29 +55,52 @@ final class KpiCalculator
     }
 
     /**
-     * PRD 7.3. D = item milik programmer yang masuk `done` (approved_at) dalam rentang.
-     * Item cancelled otomatis tidak termasuk karena statusnya bukan done.
+     * KPI Programmer (dokumen "KPI IT Development untuk Programmer"). Poin task = difficulty.
+     *
+     * - Produktivitas: poin task yang pertama kali diterima (done) dalam rentang ÷
+     *   (target poin per hari × hari kerja efektif). Realisasi > 100% ditampilkan,
+     *   kontribusi ke skor akhir dibatasi 100%.
+     * - Ketepatan waktu: seluruh task dengan deadline (due_date) dalam rentang, termasuk yang belum
+     *   selesai; tepat waktu bila versi yang akhirnya lolos QA diserahkan ≤ deadline. Dibobot poin.
+     * - Kualitas: task yang testing pertamanya dalam rentang; skor dari kategori bug terberat
+     *   pada testing pertama (rubrik di pengaturan). Dibobot poin.
+     *
+     * Komponen tanpa penyebut bernilai null (N/A). Skor akhir memakai komponen yang tersedia
+     * (bobot dinormalisasi) dan berstatus sementara bila ada komponen N/A atau testing pending.
+     * Item cancelled tidak dihitung.
      */
     public function programmer(User $user, CarbonImmutable $from, CarbonImmutable $to): KpiResult
     {
         [$start, $end] = $this->bounds($from, $to);
+        $now = CarbonImmutable::now();
 
         $items = Item::query()
             ->where('assignee_id', $user->id)
-            ->where('status', ItemStatus::Done)
-            ->whereBetween('approved_at', [$start, $end])
+            ->where('status', '!=', ItemStatus::Cancelled)
+            ->where(fn ($query) => $query
+                ->whereBetween('due_date', [$from->toDateString(), $to->toDateString()])
+                ->orWhere(fn ($query) => $query->where('status', ItemStatus::Done)->whereBetween('approved_at', [$start, $end]))
+                ->orWhereHas('statusLogs', fn ($query) => $query
+                    ->whereIn('to_status', [ItemStatus::Done, ItemStatus::QaPassed, ItemStatus::QaFailed])
+                    ->whereBetween('created_at', [$start, $end])))
             ->with(['project:id,code', 'statusLogs' => fn ($query) => $query->orderBy('created_at')->orderBy('id')])
-            ->orderBy('approved_at')
+            ->orderBy('id')
             ->get();
 
-        $tolerance = $this->settings->float(SettingKey::OnTimeTolerance);
         $hoursPerDay = $this->workingTime->hoursPerDay();
-        $weightByPoints = $this->settings->bool(SettingKey::WeightByPoints);
+        $qualityScores = $this->settings->array(SettingKey::QualityScores);
 
-        $rows = $items->map(function (Item $item) use ($tolerance, $hoursPerDay): array {
-            $hours = $this->workingTime->hoursInStatus($item->statusLogs, ItemStatus::InProgress, $item->approved_at ?? now());
-            $actualDays = $hoursPerDay > 0 ? round($hours / $hoursPerDay, 2) : 0.0;
-            $estimate = (float) $item->estimate_days;
+        $rows = $items->map(function (Item $item) use ($start, $end, $from, $to, $now, $hoursPerDay, $qualityScores): array {
+            $logs = $item->statusLogs;
+            $acceptedAt = $this->firstAcceptedAt($item, $logs);
+            $firstTest = $logs->first(fn (ItemStatusLog $log): bool => in_array($log->to_status, [ItemStatus::QaPassed, ItemStatus::QaFailed], true));
+            $firstTestInRange = $firstTest?->created_at !== null && $firstTest->created_at->between($start, $end);
+            $finding = $firstTest === null ? null : ($firstTest->qa_finding ?? QaFinding::fallbackFor($firstTest->to_status));
+            $submittedAt = $this->acceptedSubmissionAt($item, $logs);
+            $dueInRange = $item->due_date !== null
+                && $item->due_date->betweenIncluded($from->startOfDay(), $to->endOfDay());
+
+            $hours = $this->workingTime->hoursInStatus($logs, ItemStatus::InProgress, $item->approved_at ?? $now);
 
             return [
                 'id' => $item->id,
@@ -85,47 +109,161 @@ final class KpiCalculator
                 'type' => $item->type->value,
                 'difficulty' => $item->difficulty,
                 'points' => $this->points->for($item->difficulty),
-                'estimate_days' => $estimate,
-                'actual_days' => $actualDays,
-                'on_time' => $actualDays <= $estimate * (1 + $tolerance),
-                'clean' => $item->qa_fail_count === 0 && $item->reject_count === 0 && $item->reopen_count === 0,
+                'estimate_days' => (float) $item->estimate_days,
+                'actual_days' => $hoursPerDay > 0 ? round($hours / $hoursPerDay, 2) : 0.0,
+                'due_date' => $item->due_date?->toDateString(),
+                'submitted_at' => $submittedAt?->toIso8601String(),
+                'approved_at' => $acceptedAt?->toIso8601String(),
+                'accepted' => $acceptedAt !== null && $acceptedAt->between($start, $end),
+                'timeliness' => $dueInRange ? $this->timelinessStatus($item, $logs, $submittedAt, $now) : null,
+                'first_tested_at' => $firstTestInRange ? $firstTest->created_at->toIso8601String() : null,
+                'qa_finding' => $firstTestInRange ? $finding?->value : null,
+                'quality_score' => $firstTestInRange && $finding !== null ? (float) ($qualityScores[$finding->value] ?? 0) : null,
                 'qa_fail_count' => $item->qa_fail_count,
                 'reject_count' => $item->reject_count,
                 'reopen_count' => $item->reopen_count,
-                'approved_at' => $item->approved_at?->toIso8601String(),
             ];
-        });
+        })->filter(fn (array $row): bool => $row['accepted'] || $row['timeliness'] !== null || $row['quality_score'] !== null)
+            ->values();
 
-        $points = (int) $rows->sum('points');
-        $target = $this->settings->float(SettingKey::MonthlyTargetPoints) * $this->monthFraction($from, $to);
+        $accepted = $rows->where('accepted', true);
+        $points = (int) $accepted->sum('points');
+        $workingDays = $this->workingTime->workingDaysBetween($from, $to);
+        $target = $this->settings->float(SettingKey::DailyTargetPoints) * $workingDays;
+        $productivityActual = $target > 0 ? $points / $target * 100 : null;
+        $productivity = $productivityActual === null ? null : min($productivityActual, self::PRODUCTIVITY_CAP * 100);
 
-        $productivity = $target > 0 ? min($points / $target, self::PRODUCTIVITY_CAP) * 100 : null;
-        $timeliness = $this->ratio($rows->all(), 'on_time', $weightByPoints);
-        $quality = $this->ratio($rows->all(), 'clean', $weightByPoints);
+        $due = $rows->whereNotNull('timeliness');
+        $decided = $due->whereIn('timeliness', ['on_time', 'late']);
+        $decidedPoints = (int) $decided->sum('points');
+        $onTimePoints = (int) $decided->where('timeliness', 'on_time')->sum('points');
+        $pendingPoints = (int) $due->where('timeliness', 'pending')->sum('points');
+        $timeliness = $decidedPoints > 0 ? $onTimePoints / $decidedPoints * 100 : null;
 
-        $weights = $this->settings->array(SettingKey::ProgrammerWeights);
-        $final = ($productivity === null || $timeliness === null || $quality === null)
-            ? null
-            : (float) $weights['productivity'] * $productivity
-                + (float) $weights['timeliness'] * $timeliness
-                + (float) $weights['quality'] * $quality;
+        $tested = $rows->whereNotNull('quality_score');
+        $testedPoints = (int) $tested->sum('points');
+        $quality = $testedPoints > 0
+            ? $tested->sum(fn (array $row): float => $row['points'] * $row['quality_score']) / $testedPoints
+            : null;
+
+        $components = ['productivity' => $productivity, 'timeliness' => $timeliness, 'quality' => $quality];
+        $final = $this->weighted($components, $this->settings->array(SettingKey::ProgrammerWeights));
 
         return new KpiResult(
             userId: $user->id,
             name: $user->name,
             role: Role::Programmer,
             metrics: [
-                'item_count' => $rows->count(),
+                'item_count' => $accepted->count(),
                 'points' => $points,
-                'by_difficulty' => $this->byDifficulty($rows->all()),
+                'by_difficulty' => $this->byDifficulty($accepted->all()),
+                'working_days' => $workingDays,
                 'target_points' => round($target, 1),
+                'productivity_actual' => $this->round($productivityActual),
                 'productivity' => $this->round($productivity),
+                'due_count' => $due->count(),
+                'due_points' => (int) $due->sum('points'),
+                'on_time_points' => $onTimePoints,
+                'pending_points' => $pendingPoints,
                 'timeliness' => $this->round($timeliness),
+                'tested_count' => $tested->count(),
                 'quality' => $this->round($quality),
             ],
             finalScore: $this->round($final),
-            items: $rows->values()->all(),
+            items: $rows->all(),
+            provisional: in_array(null, $components, true) || $pendingPoints > 0,
         );
+    }
+
+    /**
+     * Waktu task pertama kali diterima (done). Reopen & approve ulang tidak menambah poin baru.
+     *
+     * @param  Collection<int, ItemStatusLog>  $logs
+     */
+    private function firstAcceptedAt(Item $item, Collection $logs): ?CarbonImmutable
+    {
+        $at = $logs->first(fn (ItemStatusLog $log): bool => $log->to_status === ItemStatus::Done)->created_at
+            ?? ($item->status === ItemStatus::Done ? $item->approved_at : null);
+
+        return $at === null ? null : CarbonImmutable::instance($at);
+    }
+
+    /**
+     * Waktu submit (ready_for_qa) versi yang akhirnya lolos QA: submit terakhir sebelum lulus QA
+     * yang tidak kemudian ditolak Manager. Setelah diterima (done) nilainya tetap, sehingga
+     * perbaikan pasca-reopen tidak mengubah ketepatan waktu task asal.
+     *
+     * @param  Collection<int, ItemStatusLog>  $logs
+     */
+    private function acceptedSubmissionAt(Item $item, Collection $logs): ?CarbonImmutable
+    {
+        $lastSubmit = null;
+        $candidate = null;
+
+        foreach ($logs as $log) {
+            match ($log->to_status) {
+                ItemStatus::ReadyForQa => $lastSubmit = $log->created_at,
+                ItemStatus::QaPassed => $candidate = $lastSubmit,
+                ItemStatus::Rejected => $candidate = null,
+                default => null,
+            };
+
+            if ($log->to_status === ItemStatus::Done && $candidate !== null) {
+                return CarbonImmutable::instance($candidate);
+            }
+        }
+
+        return $item->status === ItemStatus::QaPassed && $candidate !== null
+            ? CarbonImmutable::instance($candidate)
+            : null;
+    }
+
+    /**
+     * on_time / late, atau pending bila belum bisa diputuskan: deadline belum lewat, atau versi
+     * yang diserahkan sebelum deadline masih menunggu testing. Pending tidak dianggap gagal.
+     *
+     * @param  Collection<int, ItemStatusLog>  $logs
+     */
+    private function timelinessStatus(Item $item, Collection $logs, ?CarbonImmutable $submittedAt, CarbonImmutable $now): string
+    {
+        $deadline = CarbonImmutable::instance($item->due_date)->endOfDay();
+
+        if ($submittedAt !== null) {
+            return $submittedAt->lessThanOrEqualTo($deadline) ? 'on_time' : 'late';
+        }
+
+        if ($now->lessThanOrEqualTo($deadline)) {
+            return 'pending';
+        }
+
+        $lastSubmit = $logs->last(fn (ItemStatusLog $log): bool => $log->to_status === ItemStatus::ReadyForQa)?->created_at;
+        $awaitingTest = in_array($item->status, [ItemStatus::ReadyForQa, ItemStatus::QaPassed], true);
+
+        return $awaitingTest && $lastSubmit !== null && $lastSubmit->lessThanOrEqualTo($deadline) ? 'pending' : 'late';
+    }
+
+    /**
+     * Rata-rata berbobot dari komponen yang tersedia; bobot komponen N/A dibagikan ke sisanya.
+     *
+     * @param  array<string, float|null>  $components
+     * @param  array<array-key, mixed>  $weights
+     */
+    private function weighted(array $components, array $weights): ?float
+    {
+        $sum = 0.0;
+        $weightSum = 0.0;
+
+        foreach ($components as $key => $value) {
+            if ($value === null) {
+                continue;
+            }
+
+            $weight = (float) ($weights[$key] ?? 0);
+            $sum += $weight * $value;
+            $weightSum += $weight;
+        }
+
+        return $weightSum > 0 ? $sum / $weightSum : null;
     }
 
     /**
@@ -267,28 +405,6 @@ final class KpiCalculator
         }
 
         return false;
-    }
-
-    /**
-     * Persentase baris yang memenuhi $flag; opsional dibobot poin item.
-     *
-     * @param  array<int, array<string, mixed>>  $items
-     */
-    private function ratio(array $items, string $flag, bool $weightByPoints): ?float
-    {
-        $rows = collect($items);
-
-        if ($rows->isEmpty()) {
-            return null;
-        }
-
-        if (! $weightByPoints) {
-            return $rows->where($flag, true)->count() / $rows->count() * 100;
-        }
-
-        $total = (int) $rows->sum('points');
-
-        return $total === 0 ? null : (int) $rows->where($flag, true)->sum('points') / $total * 100;
     }
 
     /**

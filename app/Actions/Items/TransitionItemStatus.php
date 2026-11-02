@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Actions\Items;
 
 use App\Enums\ItemStatus;
+use App\Enums\QaFinding;
 use App\Enums\SettingKey;
 use App\Models\Item;
 use App\Models\User;
 use App\Services\SettingRepository;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -22,14 +24,23 @@ final class TransitionItemStatus
     public function __construct(private readonly SettingRepository $settings) {}
 
     /**
+     * Keputusan QA (lulus/gagal) mencatat $finding: kategori bug terberat pada testing tersebut.
+     * Bila kosong: lulus = tanpa bug, gagal = bug major.
+     *
      * @throws ValidationException
      * @throws AuthorizationException
      */
-    public function handle(Item $item, ItemStatus $to, User $actor, ?string $reason = null, ?\Illuminate\Http\UploadedFile $attachment = null): Item
-    {
+    public function handle(
+        Item $item,
+        ItemStatus $to,
+        User $actor,
+        ?string $reason = null,
+        ?UploadedFile $attachment = null,
+        ?QaFinding $finding = null,
+    ): Item {
         $reason = filled($reason) ? trim((string) $reason) : null;
 
-        return DB::transaction(function () use ($item, $to, $actor, $reason, $attachment): Item {
+        return DB::transaction(function () use ($item, $to, $actor, $reason, $attachment, $finding): Item {
             $locked = Item::query()->lockForUpdate()->findOrFail($item->getKey());
             $from = $locked->status;
 
@@ -49,6 +60,17 @@ final class TransitionItemStatus
                 throw ValidationException::withMessages(['reason' => 'Alasan wajib diisi untuk transisi ini.']);
             }
 
+            $findings = QaFinding::allowedFor($to);
+            if ($findings === []) {
+                $finding = null;
+            } elseif ($finding === null) {
+                $finding = QaFinding::fallbackFor($to);
+            } elseif (! in_array($finding, $findings, true)) {
+                throw ValidationException::withMessages([
+                    'qa_finding' => "Kategori bug \"{$finding->label()}\" tidak sesuai untuk {$to->label()}.",
+                ]);
+            }
+
             $attachmentPath = null;
             if ($attachment !== null) {
                 $attachmentPath = $attachment->store('attachments', 'public');
@@ -63,6 +85,7 @@ final class TransitionItemStatus
                 'to_status' => $to,
                 'user_id' => $actor->id,
                 'reason' => $reason,
+                'qa_finding' => $finding,
                 'attachment_path' => $attachmentPath,
             ]);
 

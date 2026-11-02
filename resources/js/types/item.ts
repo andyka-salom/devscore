@@ -59,6 +59,10 @@ export interface QueuePageProps {
     };
 }
 
+export interface ApprovalPageProps extends QueuePageProps {
+    can: { approve_all: boolean };
+}
+
 export interface AvailablePageProps {
     items: Paginated<ItemRow>;
     filters: { search: string | null };
@@ -150,10 +154,15 @@ export interface ItemDetail {
     image_url: string | null;
 }
 
+/** App\Enums\QaFinding: kategori bug terberat pada satu putaran testing QA. */
+export type QaFinding = 'none' | 'minor' | 'major' | 'critical';
+
 export interface AllowedTransition {
     value: ItemStatus;
     label: string;
     requires_reason: boolean;
+    /** Pilihan hasil testing untuk keputusan QA; kosong untuk transisi lain. */
+    qa_findings: EnumOption<QaFinding>[];
 }
 
 /** App\Http\Resources\ItemTimeline */

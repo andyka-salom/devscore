@@ -8,11 +8,13 @@ import { isProgrammerRow, isQaRow } from '@/components/kpi/kpi-tables';
 import { KpiSourceNote } from '@/components/kpi/kpi-source-note';
 import { GradeBadge, ScoreValue, scoreTone } from '@/components/kpi/score';
 import { ProgressBar } from '@/components/progress-bar';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { formatDate, formatDays } from '@/lib/format';
-import type { KpiShowPageProps, ProgrammerKpiItem, QaKpiItem } from '@/types/kpi';
+import type { QaFinding } from '@/types/item';
+import type { KpiShowPageProps, ProgrammerKpiItem, ProgrammerMetrics, QaKpiItem, TimelinessStatus } from '@/types/kpi';
 
 const flag = (ok: boolean) =>
     ok ? (
@@ -20,6 +22,21 @@ const flag = (ok: boolean) =>
     ) : (
         <X className="size-4 text-red-500" aria-label="Tidak" />
     );
+
+const TIMELINESS: Record<TimelinessStatus, { label: string; tone: BadgeTone }> = {
+    on_time: { label: 'Tepat', tone: 'success' },
+    late: { label: 'Terlambat', tone: 'danger' },
+    pending: { label: 'Pending', tone: 'warning' },
+};
+
+const FINDING_LABEL: Record<QaFinding, string> = {
+    none: 'Tanpa bug',
+    minor: 'Minor',
+    major: 'Major',
+    critical: 'Critical',
+};
+
+const dash = <span className="text-muted-foreground">—</span>;
 
 const programmerItemColumns: DataTableColumn<ProgrammerKpiItem>[] = [
     {
@@ -32,25 +49,58 @@ const programmerItemColumns: DataTableColumn<ProgrammerKpiItem>[] = [
             </Link>
         ),
     },
-    { id: 'approved', header: 'Selesai', cell: (item) => formatDate(item.approved_at) },
     { id: 'points', header: 'Poin', cell: (item) => item.points },
-    { id: 'estimate', header: 'Estimasi', cell: (item) => formatDays(item.estimate_days) },
-    { id: 'actual', header: 'Aktual', cell: (item) => formatDays(item.actual_days) },
-    { id: 'on_time', header: 'Tepat waktu', cell: (item) => flag(item.on_time) },
     {
-        id: 'clean',
-        header: 'Bersih',
-        cell: (item) => (
-            <span className="inline-flex items-center gap-2">
-                {flag(item.clean)}
-                {!item.clean && (
-                    <span className="text-muted-foreground text-xs">
-                        QA {item.qa_fail_count} · tolak {item.reject_count} · reopen {item.reopen_count}
-                    </span>
-                )}
-            </span>
-        ),
+        id: 'approved',
+        header: 'Diterima',
+        cell: (item) => (item.accepted === false ? dash : formatDate(item.approved_at)),
     },
+    {
+        id: 'deadline',
+        header: 'Deadline / Submit',
+        cell: (item) =>
+            item.due_date === undefined ? (
+                dash
+            ) : (
+                <span className="text-xs leading-tight">
+                    <span className="block">{formatDate(item.due_date)}</span>
+                    <span className="text-muted-foreground block">{formatDate(item.submitted_at)}</span>
+                </span>
+            ),
+    },
+    {
+        id: 'on_time',
+        header: 'Tepat waktu',
+        cell: (item) => {
+            if (item.timeliness !== undefined) {
+                if (item.timeliness === null) return dash;
+                const status = TIMELINESS[item.timeliness];
+
+                return <Badge tone={status.tone}>{status.label}</Badge>;
+            }
+
+            return item.on_time === undefined ? dash : flag(item.on_time);
+        },
+    },
+    {
+        id: 'quality',
+        header: 'Testing pertama',
+        cell: (item) => {
+            if (item.quality_score !== undefined) {
+                if (item.quality_score === null || !item.qa_finding) return dash;
+
+                return (
+                    <span className="inline-flex items-center gap-2">
+                        <ScoreValue value={item.quality_score} className="font-medium" />
+                        <span className="text-muted-foreground text-xs">{FINDING_LABEL[item.qa_finding]}</span>
+                    </span>
+                );
+            }
+
+            return item.clean === undefined ? dash : flag(item.clean);
+        },
+    },
+    { id: 'actual', header: 'Durasi kerja', cell: (item) => formatDays(item.actual_days) },
 ];
 
 const qaItemColumns: DataTableColumn<QaKpiItem>[] = [
@@ -134,23 +184,40 @@ export default function KpiShow({ filters, source, row }: KpiShowPageProps) {
                                         Skor akhir tidak dihitung karena belum ada item/keputusan pada rentang ini.
                                     </p>
                                 )}
+                                {row.final_score !== null && row.provisional && (
+                                    <p className="text-muted-foreground mb-4 text-sm">
+                                        Skor sementara: ada komponen yang belum bisa dinilai (N/A) atau testing yang
+                                        masih pending. Bobot komponen N/A dibagikan ke komponen lain.
+                                    </p>
+                                )}
                                 <div className="grid gap-4 sm:grid-cols-3">
                                     {programmer && (
                                         <>
                                             <Metric
                                                 label="Produktivitas"
                                                 value={programmer.metrics.productivity}
-                                                detail={`${programmer.metrics.points} / ${programmer.metrics.target_points} poin`}
+                                                detail={productivityDetail(programmer.metrics)}
                                             />
                                             <Metric
                                                 label="Ketepatan waktu"
                                                 value={programmer.metrics.timeliness}
-                                                detail={`${programmer.metrics.item_count} item selesai`}
+                                                detail={
+                                                    programmer.metrics.due_points === undefined
+                                                        ? `${programmer.metrics.item_count} item selesai`
+                                                        : `${programmer.metrics.on_time_points} dari ${programmer.metrics.due_points} poin jatuh tempo tepat waktu` +
+                                                          (programmer.metrics.pending_points
+                                                              ? ` · ${programmer.metrics.pending_points} poin pending`
+                                                              : '')
+                                                }
                                             />
                                             <Metric
                                                 label="Kualitas"
                                                 value={programmer.metrics.quality}
-                                                detail="Tanpa gagal QA/tolak/reopen"
+                                                detail={
+                                                    programmer.metrics.tested_count === undefined
+                                                        ? 'Tanpa gagal QA/tolak/reopen'
+                                                        : `Testing pertama ${programmer.metrics.tested_count} item, dibobot poin`
+                                                }
                                             />
                                         </>
                                     )}
@@ -191,7 +258,7 @@ export default function KpiShow({ filters, source, row }: KpiShowPageProps) {
                                     <CardTitle className="text-base">Rincian pembentuk angka</CardTitle>
                                     <CardDescription>
                                         {row.role.value === 'programmer'
-                                            ? 'Item yang masuk Selesai pada rentang ini.'
+                                            ? 'Item yang diterima, jatuh tempo, atau dites pertama kali pada rentang ini.'
                                             : 'Keputusan QA (lulus/gagal) pada rentang ini.'}
                                     </CardDescription>
                                 </div>
@@ -222,6 +289,14 @@ export default function KpiShow({ filters, source, row }: KpiShowPageProps) {
             </div>
         </AppLayout>
     );
+}
+
+function productivityDetail(metrics: ProgrammerMetrics): string {
+    const base = `${metrics.points} / ${metrics.target_points} poin`;
+    const days = metrics.working_days === undefined ? '' : ` (${metrics.working_days} hari kerja)`;
+    const actual = metrics.productivity_actual ?? null;
+
+    return base + days + (actual !== null && actual > 100 ? ` · realisasi ${actual}%` : '');
 }
 
 function Metric({ label, value, detail }: { label: string; value: number | null; detail: ReactNode }) {

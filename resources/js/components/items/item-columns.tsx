@@ -4,6 +4,7 @@ import { ChevronRight, CheckCircle2, Image as ImageIcon } from 'lucide-react';
 import type { DataTableColumn } from '@/components/data-table';
 import { StatusBadge } from '@/components/status-badge';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { withBack } from '@/lib/back-url';
 import { formatDate, formatDays } from '@/lib/format';
 import type { Priority } from '@/types';
 import type { ItemRow } from '@/types/item';
@@ -111,7 +112,7 @@ export function openColumn<S extends string>(): DataTableColumn<ItemRow, S> {
         className: 'text-right',
         cell: (item) => (
             <Link
-                href={item.url}
+                href={withBack(item.url)}
                 onClick={(event) => event.stopPropagation()}
                 aria-label={`Buka ${item.code}`}
                 className="bg-card text-muted-foreground hover:bg-accent hover:text-foreground inline-flex size-7 items-center justify-center rounded-md border"

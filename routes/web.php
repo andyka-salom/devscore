@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::get('approval', [QueueController::class, 'approval'])->name('queues.approval');
+    Route::post('approval/approve-all', [QueueController::class, 'approveAll'])->name('queues.approval.approve-all');
     Route::get('qa', [QueueController::class, 'qa'])->name('queues.qa');
     Route::get('items/available', [QueueController::class, 'available'])->name('queues.available');
 

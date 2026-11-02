@@ -22,6 +22,14 @@ final class ItemPolicy
         return $user->hasAnyRole(Role::Manager, Role::Chief);
     }
 
+    /**
+     * Setujui sekaligus seluruh antrian approval (hanya Manager, seperti transisi ke done).
+     */
+    public function approveAll(User $user): bool
+    {
+        return $user->is_active && $user->hasRole(Role::Manager);
+    }
+
     public function viewQaQueue(User $user): bool
     {
         return $user->hasAnyRole(Role::Qa, Role::Manager, Role::Chief);

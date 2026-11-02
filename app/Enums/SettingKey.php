@@ -12,10 +12,9 @@ enum SettingKey: string
     case DifficultyPoints = 'difficulty_points';
     case ReopenWindowDays = 'reopen_window_days';
     case SelfAssignEnabled = 'self_assign_enabled';
-    case OnTimeTolerance = 'on_time_tolerance';
-    case MonthlyTargetPoints = 'monthly_target_points';
+    case DailyTargetPoints = 'daily_target_points';
     case ProgrammerWeights = 'programmer_weights';
-    case WeightByPoints = 'weight_by_points';
+    case QualityScores = 'quality_scores';
     case QaMonthlyThroughputTarget = 'qa_monthly_throughput_target';
     case QaReviewTargetHours = 'qa_review_target_hours';
     case QaWeights = 'qa_weights';
@@ -28,13 +27,15 @@ enum SettingKey: string
     public function defaultValue(): mixed
     {
         return match ($this) {
-            self::DifficultyPoints => ['1' => 1, '2' => 2, '3' => 3, '4' => 5, '5' => 8],
+            // Poin task = difficulty.
+            self::DifficultyPoints => ['1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5],
             self::ReopenWindowDays => 30,
             self::SelfAssignEnabled => true,
-            self::OnTimeTolerance => 0.1,
-            self::MonthlyTargetPoints => 20,
+            // Target bulanan = target per hari x hari kerja efektif.
+            self::DailyTargetPoints => 5,
             self::ProgrammerWeights => ['productivity' => 0.4, 'timeliness' => 0.3, 'quality' => 0.3],
-            self::WeightByPoints => true,
+            // Skor kualitas per kategori bug terberat pada testing pertama (QaFinding).
+            self::QualityScores => ['none' => 100, 'minor' => 85, 'major' => 60, 'critical' => 0],
             self::QaMonthlyThroughputTarget => 40,
             self::QaReviewTargetHours => 8,
             self::QaWeights => ['throughput' => 0.3, 'speed' => 0.3, 'accuracy' => 0.4],

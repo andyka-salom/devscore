@@ -12,6 +12,7 @@ use App\Models\ItemStatusLog;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Antrian item pada satu status (mis. antrian QA, antrian approval) dengan
@@ -38,6 +39,7 @@ final class ItemQueueQuery
     public function filterByProject(?int $projectId): self
     {
         $this->projectId = $projectId;
+
         return $this;
     }
 
@@ -57,6 +59,19 @@ final class ItemQueueQuery
     public function count(): int
     {
         return $this->base()->count();
+    }
+
+    /**
+     * Seluruh item di antrian (tanpa paginasi), opsional difilter tipe.
+     *
+     * @return Collection<int, Item>
+     */
+    public function items(?ItemType $type = null): Collection
+    {
+        return $this->base()
+            ->when($type !== null, fn (Builder $query) => $query->where('items.type', $type))
+            ->orderBy('items.id')
+            ->get();
     }
 
     /**

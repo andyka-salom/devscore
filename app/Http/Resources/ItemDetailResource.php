@@ -7,6 +7,7 @@ namespace App\Http\Resources;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Detail item. Relasi project, assignee, qa, creator wajib di-eager load.
@@ -42,7 +43,7 @@ final class ItemDetailResource extends JsonResource
             'started_at' => $this->started_at?->toIso8601String(),
             'approved_at' => $this->approved_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
-            'image_url' => $this->image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->image_path) : null,
+            'image_url' => $this->image_path ? Storage::disk('public')->url($this->image_path) : null,
         ];
     }
 }

@@ -1,6 +1,7 @@
 import { Link, router } from '@inertiajs/react';
+import { withBack } from '@/lib/back-url';
 import { Filter, Plus } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import {
@@ -55,18 +56,10 @@ const bugColumns: DataTableColumn<ItemRow, ItemSortKey>[] = [
 ];
 
 export default function ItemIndex({ items, filters, options, can }: ItemIndexPageProps) {
+    // Setiap perubahan filter langsung diterapkan (pencarian dengan debounce).
     const updateFilters = useQueryFilters(filters);
-    const [localFilters, setLocalFilters] = useState(filters);
     const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-    useEffect(() => {
-        setLocalFilters(filters);
-    }, [filters]);
-
-    const applyFilters = () => {
-        updateFilters(localFilters);
-        setIsFilterOpen(false);
-    };
+    const extraCount = [filters.project, filters.status, filters.assignee].filter((value) => value !== null).length;
 
     return (
         <AppLayout title="Item">
@@ -86,28 +79,27 @@ export default function ItemIndex({ items, filters, options, can }: ItemIndexPag
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6 mb-4">
                         <SearchInput
                             className="lg:col-span-2"
-                            value={localFilters.search}
-                            onSearch={(search) => setLocalFilters({ ...localFilters, search })}
+                            value={filters.search}
+                            onSearch={(search) => updateFilters({ search })}
                             placeholder="Cari kode (ERP-42) atau judul"
                         />
                         <Select
                             aria-label="Prioritas"
                             options={options.priorities}
-                            value={localFilters.priority}
-                            onValueChange={(priority) => setLocalFilters({ ...localFilters, priority })}
+                            value={filters.priority}
+                            onValueChange={(priority) => updateFilters({ priority })}
                             placeholder="Semua prioritas"
                         />
                         <Checkbox
                             className="self-center"
-                            checked={localFilters.mine}
-                            onCheckedChange={(mine) => setLocalFilters({ ...localFilters, mine })}
+                            checked={filters.mine}
+                            onCheckedChange={(mine) => updateFilters({ mine })}
                             label="Hanya item saya"
                         />
                         <Button variant="outline" onClick={() => setIsFilterOpen(true)}>
                             <Filter className="mr-2 size-4" />
-                            Filter Tambahan
+                            Filter Tambahan{extraCount > 0 ? ` (${extraCount})` : ''}
                         </Button>
-                        <Button onClick={applyFilters}>Terapkan</Button>
                     </div>
 
                     <Dialog open={isFilterOpen} onClose={() => setIsFilterOpen(false)} title="Filter Tambahan">
@@ -117,8 +109,8 @@ export default function ItemIndex({ items, filters, options, can }: ItemIndexPag
                                 <Select
                                     aria-label="Project"
                                     options={options.projects}
-                                    value={localFilters.project}
-                                    onValueChange={(project) => setLocalFilters({ ...localFilters, project })}
+                                    value={filters.project}
+                                    onValueChange={(project) => updateFilters({ project })}
                                     placeholder="Semua project"
                                 />
                             </div>
@@ -127,8 +119,8 @@ export default function ItemIndex({ items, filters, options, can }: ItemIndexPag
                                 <Select
                                     aria-label="Status"
                                     options={options.statuses}
-                                    value={localFilters.status}
-                                    onValueChange={(status) => setLocalFilters({ ...localFilters, status })}
+                                    value={filters.status}
+                                    onValueChange={(status) => updateFilters({ status })}
                                     placeholder="Semua status"
                                 />
                             </div>
@@ -137,44 +129,46 @@ export default function ItemIndex({ items, filters, options, can }: ItemIndexPag
                                 <Select
                                     aria-label="Programmer"
                                     options={options.programmers}
-                                    value={localFilters.assignee}
-                                    onValueChange={(assignee) => setLocalFilters({ ...localFilters, assignee })}
+                                    value={filters.assignee}
+                                    onValueChange={(assignee) => updateFilters({ assignee })}
                                     placeholder="Semua programmer"
                                 />
                             </div>
-                            <Button className="w-full mt-4" onClick={applyFilters}>Terapkan & Tutup</Button>
+                            <Button className="w-full mt-4" variant="outline" onClick={() => setIsFilterOpen(false)}>
+                                Tutup
+                            </Button>
                         </div>
                     </Dialog>
 
                     <div className="flex space-x-2 border-b border-slate-200 mb-4">
                         <button 
                             className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === null ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            onClick={() => updateFilters({ ...localFilters, type: null })}
+                            onClick={() => updateFilters({ type: null })}
                         >
                             Semua Item
                         </button>
                         <button 
-                            className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === 'task' as any ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            onClick={() => updateFilters({ ...localFilters, type: 'task' as any })}
+                            className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === 'task' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            onClick={() => updateFilters({ type: 'task' })}
                         >
                             Task List
                         </button>
                         <button 
-                            className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === 'bug' as any ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-                            onClick={() => updateFilters({ ...localFilters, type: 'bug' as any })}
+                            className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${filters.type === 'bug' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                            onClick={() => updateFilters({ type: 'bug' })}
                         >
                             Bug List
                         </button>
                     </div>
 
                     <DataTable
-                        columns={filters.type === 'bug' as any ? bugColumns : taskColumns}
+                        columns={filters.type === 'bug' ? bugColumns : taskColumns}
                         rows={items.data}
                         getRowKey={(item) => item.id}
                         numberFrom={items.meta.from}
                         sort={{ key: filters.sort, direction: filters.direction }}
                         onSortChange={(sort) => updateFilters({ sort: sort.key, direction: sort.direction })}
-                        onRowClick={(item) => router.visit(item.url)}
+                        onRowClick={(item) => router.visit(withBack(item.url))}
                         emptyMessage="Tidak ada item yang cocok dengan filter."
                     />
                     <Pagination paginator={items} />

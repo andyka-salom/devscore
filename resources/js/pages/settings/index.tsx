@@ -1,19 +1,22 @@
-import { router, useForm } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { useForm } from '@inertiajs/react';
 import type { FormEvent, ReactNode } from 'react';
 
-import { ConfirmDialog } from '@/components/confirm-dialog';
 import { FormField } from '@/components/form-field';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input, InputError } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
-import { formatDate } from '@/lib/format';
 import type { KpiSettings, SettingsPageProps } from '@/types/settings';
 
 const DAYS = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
 const DIFFICULTY_KEYS = ['1', '2', '3', '4', '5'] as const;
+const QUALITY_KEYS = [
+    { key: 'none', label: 'Tanpa bug' },
+    { key: 'minor', label: 'Bug minor' },
+    { key: 'major', label: 'Bug major' },
+    { key: 'critical', label: 'Bug critical' },
+] as const;
 
 /** Bobot & toleransi disimpan sebagai pecahan (0.4) tetapi diedit sebagai persen (40). */
 const toPercent = (value: number) => Math.round(value * 1000) / 10;
@@ -56,26 +59,22 @@ export default function Settings({ settings, holidays, can }: SettingsPageProps)
                 </Section>
 
                 <Section title="KPI Programmer">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormField label="Target poin per bulan" error={errors.monthly_target_points}>
-                            <Input
-                                type="number"
-                                min={1}
-                                step="0.5"
-                                value={form.data.monthly_target_points}
-                                onChange={(event) => form.setData('monthly_target_points', Number(event.target.value))}
-                            />
-                        </FormField>
-                        <FormField label="Toleransi ketepatan waktu (%)" error={errors.on_time_tolerance}>
-                            <Input
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={toPercent(form.data.on_time_tolerance)}
-                                onChange={(event) => form.setData('on_time_tolerance', fromPercent(event.target.value))}
-                            />
-                        </FormField>
-                    </div>
+                    <FormField
+                        label="Target poin per hari kerja"
+                        error={errors.daily_target_points}
+                        className="sm:w-1/2"
+                    >
+                        <Input
+                            type="number"
+                            min={0.5}
+                            step="0.5"
+                            value={form.data.daily_target_points}
+                            onChange={(event) => form.setData('daily_target_points', Number(event.target.value))}
+                        />
+                    </FormField>
+                    <p className="text-muted-foreground text-xs">
+                        Target bulanan = target per hari × hari kerja efektif (di luar hari libur).
+                    </p>
                     <WeightInputs
                         weights={form.data.programmer_weights}
                         labels={{ productivity: 'Produktivitas', timeliness: 'Tepat waktu', quality: 'Kualitas' }}
@@ -83,12 +82,27 @@ export default function Settings({ settings, holidays, can }: SettingsPageProps)
                         total={programmerTotal}
                         error={errors.programmer_weights}
                     />
-                    <Checkbox
-                        checked={form.data.weight_by_points}
-                        onCheckedChange={(checked) => form.setData('weight_by_points', checked)}
-                        label="Bobot ketepatan waktu & kualitas dengan poin item"
-                        description="Item sulit lebih berpengaruh pada persentase."
-                    />
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium">Skor kualitas per hasil testing pertama</p>
+                        <div className="grid gap-3 sm:grid-cols-4">
+                            {QUALITY_KEYS.map(({ key, label }) => (
+                                <FormField key={key} label={label} error={errors[`quality_scores.${key}`]}>
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        value={form.data.quality_scores[key]}
+                                        onChange={(event) =>
+                                            form.setData('quality_scores', {
+                                                ...form.data.quality_scores,
+                                                [key]: Number(event.target.value),
+                                            })
+                                        }
+                                    />
+                                </FormField>
+                            ))}
+                        </div>
+                    </div>
                 </Section>
 
                 <Section title="KPI QA">

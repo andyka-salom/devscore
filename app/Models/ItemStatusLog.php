@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ItemStatus;
+use App\Enums\QaFinding;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,8 +16,9 @@ use LogicException;
  *
  * @property ItemStatus|null $from_status
  * @property ItemStatus $to_status
+ * @property QaFinding|null $qa_finding
  */
-#[Fillable(['item_id', 'from_status', 'to_status', 'user_id', 'reason', 'attachment_path'])]
+#[Fillable(['item_id', 'from_status', 'to_status', 'user_id', 'reason', 'qa_finding', 'attachment_path'])]
 class ItemStatusLog extends Model
 {
     public const UPDATED_AT = null;
@@ -35,6 +37,7 @@ class ItemStatusLog extends Model
         return [
             'from_status' => ItemStatus::class,
             'to_status' => ItemStatus::class,
+            'qa_finding' => QaFinding::class,
             'created_at' => 'datetime',
         ];
     }

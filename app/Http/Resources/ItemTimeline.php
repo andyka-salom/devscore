@@ -31,8 +31,11 @@ final class ItemTimeline
             'user' => UserSummaryResource::make($log->user)->resolve(),
             'from' => $log->from_status === null ? null : EnumOption::of($log->from_status),
             'to' => EnumOption::of($log->to_status),
-            'body' => $log->reason,
-            'attachment_url' => $log->attachment_path ? asset('storage/' . $log->attachment_path) : null,
+            'body' => collect([
+                $log->qa_finding === null ? null : "Hasil testing: {$log->qa_finding->label()}",
+                $log->reason,
+            ])->filter()->implode(' — ') ?: null,
+            'attachment_url' => $log->attachment_path ? asset('storage/'.$log->attachment_path) : null,
             'is_system' => false,
             'can_edit' => false,
             'edited' => false,

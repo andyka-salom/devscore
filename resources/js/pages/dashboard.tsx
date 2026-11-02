@@ -1,4 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
+import { withBack } from '@/lib/back-url';
 import { CheckCircle2, Hammer, Inbox, UserRound, Clock, ArrowRight, FolderKanban } from 'lucide-react';
 
 import { StatCard } from '@/components/stat-card';
@@ -75,7 +76,7 @@ export default function Dashboard({ stats, recent_items, active_projects }: Dash
                                 {recent_items.map((item) => (
                                     <li key={item.id}>
                                         <Link 
-                                            href={item.url} 
+                                            href={withBack(item.url)}
                                             className="group flex flex-col gap-1.5 p-4 hover:bg-slate-50 transition-colors"
                                         >
                                             <div className="flex items-center justify-between">

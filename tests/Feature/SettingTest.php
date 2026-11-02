@@ -10,18 +10,19 @@ use App\Services\SettingRepository;
 function validSettings(array $overrides = []): array
 {
     return [
-        'difficulty_points' => ['1' => 1, '2' => 2, '3' => 3, '4' => 5, '5' => 8],
+        'difficulty_points' => ['1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5],
         'reopen_window_days' => 30,
         'self_assign_enabled' => false,
-        'on_time_tolerance' => 0.15,
-        'monthly_target_points' => 25,
+        'daily_target_points' => 4,
         'programmer_weights' => ['productivity' => 0.5, 'timeliness' => 0.25, 'quality' => 0.25],
-        'weight_by_points' => true,
+        'quality_scores' => ['none' => 100, 'minor' => 80, 'major' => 50, 'critical' => 0],
         'qa_monthly_throughput_target' => 30,
         'qa_review_target_hours' => 6,
         'qa_weights' => ['throughput' => 0.3, 'speed' => 0.3, 'accuracy' => 0.4],
         'work_start' => '09:00',
         'work_end' => '18:00',
+        'work_start_saturday' => '08:30',
+        'work_end_saturday' => '13:00',
         'work_days' => [1, 2, 3, 4, 5, 6],
         ...$overrides,
     ];
@@ -31,7 +32,8 @@ it('manager menyimpan pengaturan KPI', function (): void {
     $this->actingAs(manager())->put('/settings', validSettings())->assertSessionHasNoErrors();
 
     $settings = app(SettingRepository::class);
-    expect($settings->float(SettingKey::MonthlyTargetPoints))->toBe(25.0)
+    expect($settings->float(SettingKey::DailyTargetPoints))->toBe(4.0)
+        ->and($settings->array(SettingKey::QualityScores)['minor'])->toEqual(80)
         ->and($settings->bool(SettingKey::SelfAssignEnabled))->toBeFalse()
         ->and($settings->array(SettingKey::WorkDays))->toBe([1, 2, 3, 4, 5, 6]);
 });

@@ -19,9 +19,9 @@ it('menampilkan detail item dengan allowed_transitions dari backend', function (
             ->where('item.status.value', 'qa_passed')
             ->has('timeline', 5)
             ->where('allowed_transitions', [
-                ['value' => 'done', 'label' => 'Setujui', 'requires_reason' => false],
-                ['value' => 'rejected', 'label' => 'Tolak', 'requires_reason' => true],
-                ['value' => 'cancelled', 'label' => 'Batalkan', 'requires_reason' => true],
+                ['value' => 'done', 'label' => 'Setujui', 'requires_reason' => false, 'qa_findings' => []],
+                ['value' => 'rejected', 'label' => 'Tolak', 'requires_reason' => true, 'qa_findings' => []],
+                ['value' => 'cancelled', 'label' => 'Batalkan', 'requires_reason' => true, 'qa_findings' => []],
             ])
         );
 });
@@ -77,4 +77,19 @@ it('mengembalikan 403 untuk transisi oleh pihak tidak berwenang', function (): v
     $this->actingAs(assigneeOf($item))
         ->post("/items/{$item->id}/transitions", ['status' => 'done'])
         ->assertForbidden();
+});
+
+it('mewajibkan kategori bug saat gagal QA lewat HTTP', function (): void {
+    $item = Item::factory()->readyForQa()->create();
+
+    $this->actingAs(qaOf($item))
+        ->post("/items/{$item->id}/transitions", ['status' => 'qa_failed', 'reason' => 'Error'])
+        ->assertSessionHasErrors('qa_finding');
+
+    $this->actingAs(qaOf($item))
+        ->post("/items/{$item->id}/transitions", ['status' => 'qa_failed', 'reason' => 'Error', 'qa_finding' => 'minor'])
+        ->assertSessionHasNoErrors();
+
+    expect($item->fresh()->status)->toBe(ItemStatus::QaFailed)
+        ->and($item->statusLogs()->latest('id')->firstOrFail()->qa_finding?->value)->toBe('minor');
 });

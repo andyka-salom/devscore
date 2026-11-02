@@ -1,4 +1,5 @@
 import { router } from '@inertiajs/react';
+import { withBack } from '@/lib/back-url';
 
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import { codeColumn, estimateColumn, openColumn, statusColumn, titleColumn } from '@/components/items/item-columns';
@@ -72,7 +73,7 @@ export function QueueTable({ title, description, emptyMessage, items, counts, fi
                     numberFrom={items.meta.from}
                     sort={{ key: filters.sort, direction: filters.direction }}
                     onSortChange={(sort) => updateFilters({ sort: sort.key, direction: sort.direction })}
-                    onRowClick={(item) => router.visit(item.url)}
+                    onRowClick={(item) => router.visit(withBack(item.url))}
                     emptyMessage={emptyMessage}
                 />
                 <Pagination paginator={items} />

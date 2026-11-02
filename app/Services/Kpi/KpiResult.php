@@ -14,7 +14,7 @@ use App\Http\Resources\EnumOption;
 final readonly class KpiResult
 {
     /**
-     * @param  array<string, float|int|null>  $metrics  komponen skor & angka mentah
+     * @param  array<string, float|int|list<array<string, int>>|null>  $metrics  komponen skor & angka mentah
      * @param  list<array<string, mixed>>  $items  baris drill-down pembentuk angka
      */
     public function __construct(
@@ -25,6 +25,7 @@ final readonly class KpiResult
         public ?float $finalScore,
         public array $items,
         public ?string $note = null,
+        public bool $provisional = false,
     ) {}
 
     /**
@@ -40,6 +41,8 @@ final readonly class KpiResult
             'role' => EnumOption::of($this->role),
             'metrics' => $this->metrics,
             'final_score' => $this->finalScore,
+            // Sementara: ada komponen N/A atau testing yang masih pending.
+            'provisional' => $this->provisional,
             'grade' => $grade === null ? null : EnumOption::of($grade),
             'items' => $this->items,
             'note' => $this->note,

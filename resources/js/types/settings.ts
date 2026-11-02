@@ -1,11 +1,12 @@
+import type { QaFinding } from '@/types/item';
+
 export interface KpiSettings {
     difficulty_points: Record<'1' | '2' | '3' | '4' | '5', number>;
     reopen_window_days: number;
     self_assign_enabled: boolean;
-    on_time_tolerance: number;
-    monthly_target_points: number;
+    daily_target_points: number;
     programmer_weights: { productivity: number; timeliness: number; quality: number };
-    weight_by_points: boolean;
+    quality_scores: Record<QaFinding, number>;
     qa_monthly_throughput_target: number;
     qa_review_target_hours: number;
     qa_weights: { throughput: number; speed: number; accuracy: number };
