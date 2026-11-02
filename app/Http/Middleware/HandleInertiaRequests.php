@@ -69,6 +69,7 @@ class HandleInertiaRequests extends Middleware
                 : null,
             'kpi' => $user->can('viewAny', KpiPeriod::class),
             'settings' => $user->can('viewSettings', KpiPeriod::class),
+            'users' => $user->can('viewAny', User::class),
         ];
     }
 }

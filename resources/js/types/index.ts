@@ -4,7 +4,7 @@ export interface EnumOption<T extends string = string> {
     label: string;
 }
 
-export type Role = 'programmer' | 'qa' | 'manager' | 'admin';
+export type Role = 'programmer' | 'qa' | 'manager' | 'admin' | 'chief';
 
 export type ItemStatus =
     | 'backlog'
@@ -43,6 +43,7 @@ export interface NavAccess {
     featureRequests: number | boolean | null;
     kpi: boolean;
     settings: boolean;
+    users: boolean;
 }
 
 export interface SharedData {

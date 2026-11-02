@@ -16,6 +16,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
@@ -65,4 +66,6 @@ Route::middleware('auth')->group(function (): void {
     Route::post('settings/holidays', [SettingController::class, 'storeHoliday'])->name('settings.holidays.store');
     Route::post('settings/holidays/sync', [SettingController::class, 'syncHolidays'])->name('settings.holidays.sync');
     Route::delete('settings/holidays/{holiday}', [SettingController::class, 'destroyHoliday'])->name('settings.holidays.destroy');
+
+    Route::resource('users', UserController::class)->except('show');
 });

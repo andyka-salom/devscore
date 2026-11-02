@@ -10,6 +10,7 @@ import {
     ShieldCheck,
     Bug,
     CheckSquare,
+    UserCog,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -57,7 +58,10 @@ export const navigation: NavSection[] = [
     },
     {
         title: 'Admin',
-        items: [{ title: 'Pengaturan', href: '/settings', icon: Settings, accessKey: 'settings' }],
+        items: [
+            { title: 'Manajemen User', href: '/users', icon: UserCog, accessKey: 'users' },
+            { title: 'Pengaturan', href: '/settings', icon: Settings, accessKey: 'settings' },
+        ],
     },
 ];
 
