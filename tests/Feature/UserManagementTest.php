@@ -29,7 +29,39 @@ it('admin melihat daftar user dengan filter role & pencarian', function (): void
             ->where('filters.role', 'qa'));
 });
 
-it('selain admin tidak boleh mengakses manajemen user', function (Role $role): void {
+it('manager adalah superadmin dan boleh mengelola user', function (): void {
+    $manager = manager();
+    $target = User::factory()->programmer()->create();
+
+    $this->actingAs($manager)->get('/users')->assertOk();
+    $this->actingAs($manager)->post('/users', [
+        'name' => 'Admin Baru',
+        'email' => 'adminbaru@example.com',
+        'role' => 'admin',
+        'is_active' => true,
+        'password' => 'rahasia-123',
+        'password_confirmation' => 'rahasia-123',
+    ])->assertSessionHasNoErrors();
+    $this->actingAs($manager)->delete("/users/{$target->id}")->assertRedirect('/users');
+
+    expect(User::query()->where('email', 'adminbaru@example.com')->exists())->toBeTrue()
+        ->and(User::query()->whereKey($target->id)->exists())->toBeFalse();
+});
+
+it('manager tidak bisa mengubah role akun sendiri', function (): void {
+    $manager = manager();
+
+    $this->actingAs($manager)->put("/users/{$manager->id}", [
+        'name' => $manager->name,
+        'email' => $manager->email,
+        'role' => 'programmer',
+        'is_active' => true,
+    ])->assertSessionHasErrors('role');
+
+    expect($manager->refresh()->role)->toBe(Role::Manager);
+});
+
+it('selain manager & admin tidak boleh mengakses manajemen user', function (Role $role): void {
     $user = User::factory()->create(['role' => $role]);
     $target = User::factory()->create();
 
@@ -37,7 +69,7 @@ it('selain admin tidak boleh mengakses manajemen user', function (Role $role): v
     $this->actingAs($user)->post('/users', [])->assertForbidden();
     $this->actingAs($user)->put("/users/{$target->id}", [])->assertForbidden();
     $this->actingAs($user)->delete("/users/{$target->id}")->assertForbidden();
-})->with([Role::Programmer, Role::Qa, Role::Manager, Role::Chief]);
+})->with([Role::Programmer, Role::Qa, Role::Chief]);
 
 it('admin nonaktif tidak boleh mengakses manajemen user', function (): void {
     $this->actingAs(User::factory()->admin()->inactive()->create())->get('/users')->assertForbidden();
@@ -148,7 +180,9 @@ it('DeleteUser melempar validasi untuk user dengan riwayat dan menolak hapus dir
     $this->actingAs($admin)->delete("/users/{$admin->id}")->assertForbidden();
 });
 
-it('menu manajemen user hanya muncul untuk admin', function (): void {
+it('menu manajemen user hanya muncul untuk manager & admin', function (): void {
     $this->actingAs(admin())->get('/')->assertInertia(fn (Assert $page) => $page->where('nav.users', true));
-    $this->actingAs(manager())->get('/')->assertInertia(fn (Assert $page) => $page->where('nav.users', false));
+    $this->actingAs(manager())->get('/')->assertInertia(fn (Assert $page) => $page->where('nav.users', true));
+    $this->actingAs(User::factory()->qa()->create())->get('/')
+        ->assertInertia(fn (Assert $page) => $page->where('nav.users', false));
 });

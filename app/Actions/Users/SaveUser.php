@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Actions\Users;
 
-use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Membuat atau memperbarui user (oleh Administrator).
+ * Membuat atau memperbarui user (oleh superadmin: Manager/Administrator).
  */
 final class SaveUser
 {
@@ -29,7 +28,7 @@ final class SaveUser
 
         // Cegah admin mengunci dirinya sendiri dari menu manajemen user.
         if ($user !== null && $user->id === $actor->id) {
-            if ($data['role'] !== Role::Admin->value) {
+            if ($data['role'] !== $user->role->value) {
                 throw ValidationException::withMessages(['role' => 'Anda tidak bisa mengubah role akun sendiri.']);
             }
 

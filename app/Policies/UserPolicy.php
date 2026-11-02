@@ -8,13 +8,13 @@ use App\Enums\Role;
 use App\Models\User;
 
 /**
- * Manajemen user hanya untuk Administrator (superadmin).
+ * Manajemen user untuk superadmin: Manager dan Administrator.
  */
 final class UserPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->is_active && $user->hasRole(Role::Admin);
+        return $user->is_active && $user->hasAnyRole(Role::Manager, Role::Admin);
     }
 
     public function create(User $user): bool
