@@ -1,6 +1,7 @@
 import {
     ChartColumnBig,
     ClipboardCheck,
+    ClipboardList,
     FolderKanban,
     Hand,
     House,
@@ -41,6 +42,7 @@ export const navigation: NavSection[] = [
             { title: 'Semua Item', href: '/items', icon: ListTodo },
             { title: 'Task List', href: '/items?type=task', icon: CheckSquare },
             { title: 'Bug List', href: '/items?type=bug', icon: Bug },
+            { title: 'Test Case', href: '/test-cases', icon: ClipboardList },
             { title: 'Permintaan Fitur', href: '/feature-requests', icon: Lightbulb, accessKey: 'featureRequests' },
         ],
     },

@@ -15,6 +15,14 @@ final class TestCasePolicy
     private const array CLOSED_STATUSES = [ItemStatus::Done, ItemStatus::Cancelled];
 
     /**
+     * Daftar test case; isinya dibatasi ke item yang boleh dilihat (TestCaseListQuery).
+     */
+    public function viewAny(User $user): bool
+    {
+        return $user->is_active;
+    }
+
+    /**
      * Programmer, QA, dan Manager yang bisa melihat item boleh menulis test case selama item belum final.
      */
     public function create(User $user, Item $item): bool

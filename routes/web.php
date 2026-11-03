@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('items/{item}/notes', [NoteController::class, 'storeForItem'])->name('items.notes.store');
     Route::post('items/{item}/test-cases', [TestCaseController::class, 'store'])->name('items.test-cases.store');
 
+    Route::get('test-cases', [TestCaseController::class, 'index'])->name('test-cases.index');
     Route::put('test-cases/{testCase}', [TestCaseController::class, 'update'])->name('test-cases.update');
     Route::put('test-cases/{testCase}/result', [TestCaseController::class, 'result'])->name('test-cases.result');
     Route::delete('test-cases/{testCase}', [TestCaseController::class, 'destroy'])->name('test-cases.destroy');

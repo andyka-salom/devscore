@@ -87,9 +87,11 @@ final class ItemListQuery
     }
 
     /**
+     * Item yang boleh dilihat viewer (juga dipakai daftar test case).
+     *
      * @return Builder<Item>
      */
-    private function visible(): Builder
+    public function visible(): Builder
     {
         $query = Item::query();
 

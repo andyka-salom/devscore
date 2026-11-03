@@ -209,6 +209,32 @@ export interface TestCase {
     can: { update: boolean; delete: boolean; record_result: boolean };
 }
 
+/** App\Http\Resources\TestCaseRowResource */
+export interface TestCaseRow {
+    id: number;
+    scenario: string;
+    expected_result: string;
+    actual_result: string | null;
+    result: EnumOption<TestCaseResult>;
+    creator: string;
+    tester: string | null;
+    tested_at: string | null;
+    item: { code: string; title: string; status: EnumOption<ItemStatus>; project: string; url: string };
+}
+
+export interface TestCaseFilters {
+    search: string | null;
+    project: number | null;
+    result: TestCaseResult | null;
+}
+
+export interface TestCaseIndexPageProps {
+    testCases: Paginated<TestCaseRow>;
+    counts: Record<TestCaseResult | 'all', number>;
+    filters: TestCaseFilters;
+    options: { projects: SelectOption<number>[] };
+}
+
 export interface ItemShowPageProps {
     item: ItemDetail;
     timeline: TimelineEntry[];

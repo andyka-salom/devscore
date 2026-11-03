@@ -179,6 +179,51 @@ it('menampilkan test case beserta pembuat dan penguji di detail item', function 
         );
 });
 
+it('menampilkan daftar test case yang bisa diakses beserta jumlah per hasil', function (): void {
+    $item = Item::factory()->readyForQa()->create();
+    $failed = ItemTestCase::factory()->failed()->for($item)->create();
+    ItemTestCase::factory()->for($item)->create();
+    ItemTestCase::factory()->create(); // item project lain, tidak terlihat
+
+    $qa = User::factory()->qa()->create();
+    $item->project->members()->attach($qa);
+
+    $this->actingAs($qa)
+        ->get('/test-cases')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('test-cases/index')
+            ->has('testCases.data', 2)
+            ->where('counts.all', 2)
+            ->where('counts.failed', 1)
+            ->where('counts.untested', 1)
+        );
+
+    $this->actingAs($qa)
+        ->get('/test-cases?result=failed')
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('testCases.data', 1)
+            ->where('testCases.data.0.id', $failed->id)
+            ->where('testCases.data.0.item.code', $item->load('project')->code)
+            ->where('testCases.data.0.creator', $failed->creator->name)
+            ->where('testCases.data.0.tester', $failed->tester->name)
+            ->where('counts.all', 2)
+        );
+});
+
+it('memfilter daftar test case per project dan kata kunci untuk manager', function (): void {
+    $match = ItemTestCase::factory()->create(['scenario' => 'Login password salah']);
+    ItemTestCase::factory()->create(['scenario' => 'Login password salah']);
+    ItemTestCase::factory()->for($match->item)->create(['scenario' => 'Export laporan']);
+
+    $this->actingAs(manager())
+        ->get("/test-cases?project={$match->item->project_id}&search=password")
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('testCases.data', 1)
+            ->where('testCases.data.0.id', $match->id)
+        );
+});
+
 it('tidak bisa menghapus user yang pernah membuat atau mengetes test case', function (): void {
     $testCase = ItemTestCase::factory()->passed()->create();
 
