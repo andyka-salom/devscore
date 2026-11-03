@@ -4,6 +4,7 @@ import { Hand, Pencil, Trash2, CalendarDays, User, Clock, AlertCircle } from 'lu
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DetailList } from '@/components/detail-list';
 import { ItemTimeline } from '@/components/items/item-timeline';
+import { TestCasePanel } from '@/components/items/test-case-panel';
 import { TransitionActions } from '@/components/items/transition-actions';
 import { TriagePanel } from '@/components/items/triage-panel';
 import { NoteComposer } from '@/components/notes/note-composer';
@@ -16,7 +17,7 @@ import { backUrlFrom } from '@/lib/back-url';
 import { formatDate, formatDateTime, formatDays } from '@/lib/format';
 import type { ItemShowPageProps } from '@/types/item';
 
-export default function ItemShow({ item, timeline, allowed_transitions, can, triage }: ItemShowPageProps) {
+export default function ItemShow({ item, timeline, test_cases, allowed_transitions, can, triage }: ItemShowPageProps) {
     // Kembali ke daftar asal (approval, QA, item halaman N, dst.); default daftar item.
     const backUrl = backUrlFrom(usePage().url, '/items');
 
@@ -103,6 +104,8 @@ export default function ItemShow({ item, timeline, allowed_transitions, can, tri
                             )}
                         </CardContent>
                     </Card>
+
+                    <TestCasePanel itemId={item.id} testCases={test_cases} canAdd={can.add_test_case} />
 
                     {/* Timeline & Notes Card */}
                     <Card className="border-slate-200/60 shadow-sm">

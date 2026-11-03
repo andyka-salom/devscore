@@ -19,8 +19,10 @@ use App\Http\Resources\FormOptions;
 use App\Http\Resources\ItemDetailResource;
 use App\Http\Resources\ItemTimeline;
 use App\Http\Resources\QueueItemResource;
+use App\Http\Resources\TestCaseResource;
 use App\Models\Item;
 use App\Models\Project;
+use App\Models\TestCase;
 use App\Queries\ItemListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -85,6 +87,9 @@ final class ItemController extends Controller
             'statusLogs' => fn ($query) => $query->orderBy('created_at')->orderBy('id'),
             'statusLogs.user:id,name,role',
             'notes.user:id,name,role',
+            'testCases' => fn ($query) => $query->orderBy('id'),
+            'testCases.creator:id,name,role',
+            'testCases.tester:id,name,role',
         ]);
 
         $canTriage = $user->can('updateEstimate', $item);
@@ -92,6 +97,7 @@ final class ItemController extends Controller
         return Inertia::render('items/show', [
             'item' => ItemDetailResource::make($item)->resolve($request),
             'timeline' => ItemTimeline::for($item, $user),
+            'test_cases' => TestCaseResource::collection($item->testCases)->resolve($request),
             'allowed_transitions' => array_map(fn (ItemStatus $to): array => [
                 'value' => $to->value,
                 'label' => $item->status->transitionLabel($to),
@@ -105,6 +111,7 @@ final class ItemController extends Controller
                 'assign' => $user->can('assign', $item),
                 'claim' => $user->can('claim', $item),
                 'add_note' => $user->can('addNote', $item),
+                'add_test_case' => $user->can('create', [TestCase::class, $item]),
             ],
             'triage' => $canTriage ? [
                 'difficulty' => $item->difficulty,

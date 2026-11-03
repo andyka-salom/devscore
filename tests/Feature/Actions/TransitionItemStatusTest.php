@@ -85,6 +85,29 @@ it('menolak QA yang bukan QA item', function (): void {
     transition($item, ItemStatus::QaPassed, User::factory()->qa()->create());
 })->throws(AuthorizationException::class);
 
+it('mengizinkan QA lain yang menjadi anggota project dan mencatatnya sebagai QA item', function (ItemStatus $to, ?string $reason): void {
+    $item = Item::factory()->readyForQa()->create();
+    $otherQa = User::factory()->qa()->create();
+    $item->project->members()->attach($otherQa);
+
+    $result = transition($item, $to, $otherQa, $reason);
+
+    expect($result->status)->toBe($to)
+        ->and($result->qa_id)->toBe($otherQa->id)
+        ->and($result->statusLogs()->latest('id')->first()->user_id)->toBe($otherQa->id);
+})->with([
+    'qa_passed' => [ItemStatus::QaPassed, null],
+    'qa_failed' => [ItemStatus::QaFailed, 'Tombol simpan error'],
+]);
+
+it('menolak user non-QA anggota project menjalankan keputusan QA', function (): void {
+    $item = Item::factory()->readyForQa()->create();
+    $programmer = User::factory()->programmer()->create();
+    $item->project->members()->attach($programmer);
+
+    transition($item, ItemStatus::QaPassed, $programmer);
+})->throws(AuthorizationException::class);
+
 it('menolak programmer yang meng-approve itemnya sendiri', function (): void {
     $item = Item::factory()->qaPassed()->create();
 

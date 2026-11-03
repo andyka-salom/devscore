@@ -6,6 +6,7 @@ namespace App\Actions\Items;
 
 use App\Enums\ItemStatus;
 use App\Enums\QaFinding;
+use App\Enums\Role;
 use App\Enums\SettingKey;
 use App\Models\Item;
 use App\Models\User;
@@ -77,6 +78,12 @@ final class TransitionItemStatus
             }
 
             $this->applyCountersAndTimestamps($locked, $from, $to);
+
+            // Project bisa punya banyak QA; qa_id mengikuti QA yang benar-benar mengetes.
+            if ($findings !== [] && $actor->hasRole(Role::Qa)) {
+                $locked->qa_id = $actor->id;
+            }
+
             $locked->status = $to;
             $locked->save();
 

@@ -25,6 +25,7 @@ final class DeleteUser
         'items' => ['assignee_id', 'qa_id', 'created_by'],
         'item_status_logs' => ['user_id'],
         'notes' => ['user_id'],
+        'test_cases' => ['created_by', 'tested_by'],
         'projects' => ['created_by'],
         'kpi_periods' => ['closed_by'],
         'kpi_snapshots' => ['user_id'],

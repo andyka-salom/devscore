@@ -118,6 +118,14 @@ class Item extends Model
     }
 
     /**
+     * @return HasMany<TestCase, $this>
+     */
+    public function testCases(): HasMany
+    {
+        return $this->hasMany(TestCase::class)->chaperone();
+    }
+
+    /**
      * @return MorphMany<Note, $this>
      */
     public function notes(): MorphMany

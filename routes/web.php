@@ -16,6 +16,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\QueueController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\TestCaseController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +48,11 @@ Route::middleware('auth')->group(function (): void {
     Route::put('items/{item}/triage', ItemTriageController::class)->name('items.triage');
     Route::post('items/{item}/claim', ItemClaimController::class)->name('items.claim');
     Route::post('items/{item}/notes', [NoteController::class, 'storeForItem'])->name('items.notes.store');
+    Route::post('items/{item}/test-cases', [TestCaseController::class, 'store'])->name('items.test-cases.store');
+
+    Route::put('test-cases/{testCase}', [TestCaseController::class, 'update'])->name('test-cases.update');
+    Route::put('test-cases/{testCase}/result', [TestCaseController::class, 'result'])->name('test-cases.result');
+    Route::delete('test-cases/{testCase}', [TestCaseController::class, 'destroy'])->name('test-cases.destroy');
 
     Route::put('notes/{note}', [NoteController::class, 'update'])->name('notes.update');
     Route::delete('notes/{note}', [NoteController::class, 'destroy'])->name('notes.destroy');

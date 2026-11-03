@@ -82,6 +82,22 @@ it('hanya menampilkan item milik QA yang login di antrian QA', function (): void
         );
 });
 
+it('menampilkan item di project tempat QA menjadi anggota pada antrian QA', function (): void {
+    $item = Item::factory()->readyForQa()->create();
+    Item::factory()->readyForQa()->create();
+    $otherQa = User::factory()->qa()->create();
+    $item->project->members()->attach($otherQa);
+
+    $this->actingAs($otherQa)
+        ->get('/qa')
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('items.data', 1)
+            ->where('items.data.0.id', $item->id)
+            ->where('nav.qa', 1)
+        );
+});
+
 it('menampilkan seluruh antrian QA untuk manager', function (): void {
     Item::factory()->readyForQa()->count(2)->create();
 

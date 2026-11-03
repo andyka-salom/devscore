@@ -191,9 +191,28 @@ export interface TriageState {
     qas: SelectOption<number>[];
 }
 
+/** App\Enums\TestCaseResult */
+export type TestCaseResult = 'untested' | 'passed' | 'failed';
+
+/** App\Http\Resources\TestCaseResource */
+export interface TestCase {
+    id: number;
+    scenario: string;
+    steps: string | null;
+    expected_result: string;
+    actual_result: string | null;
+    result: EnumOption<TestCaseResult>;
+    creator: UserSummary;
+    tester: UserSummary | null;
+    tested_at: string | null;
+    created_at: string | null;
+    can: { update: boolean; delete: boolean; record_result: boolean };
+}
+
 export interface ItemShowPageProps {
     item: ItemDetail;
     timeline: TimelineEntry[];
+    test_cases: TestCase[];
     allowed_transitions: AllowedTransition[];
     can: {
         update: boolean;
@@ -202,6 +221,7 @@ export interface ItemShowPageProps {
         assign: boolean;
         claim: boolean;
         add_note: boolean;
+        add_test_case: boolean;
     };
     triage: TriageState | null;
 }

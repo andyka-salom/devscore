@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Antrian item pada satu status (mis. antrian QA, antrian approval) dengan
@@ -49,7 +50,7 @@ final class ItemQueueQuery
     }
 
     /**
-     * QA hanya melihat item di mana ia ditunjuk; Manager melihat semua.
+     * QA melihat item di mana ia ditunjuk atau item di project tempat ia menjadi anggota; Manager melihat semua.
      */
     public static function qa(User $user): self
     {
@@ -126,7 +127,9 @@ final class ItemQueueQuery
     {
         return Item::query()
             ->where('items.status', $this->status)
-            ->when($this->qaId !== null, fn (Builder $query) => $query->where('items.qa_id', $this->qaId))
+            ->when($this->qaId !== null, fn (Builder $query) => $query->where(fn (Builder $query) => $query
+                ->where('items.qa_id', $this->qaId)
+                ->orWhereIn('items.project_id', DB::table('project_members')->select('project_id')->where('user_id', $this->qaId))))
             ->when($this->projectId !== null, fn (Builder $query) => $query->where('items.project_id', $this->projectId));
     }
 }

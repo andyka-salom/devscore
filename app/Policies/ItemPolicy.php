@@ -167,7 +167,7 @@ final class ItemPolicy
                 TransitionActor::Assignee => $user->hasRole(Role::Programmer)
                     && $item->assignee_id === $user->id
                     && ($to !== ItemStatus::Assigned || $this->settings->bool(SettingKey::SelfAssignEnabled)),
-                TransitionActor::Qa => $user->hasRole(Role::Qa) && $item->qa_id === $user->id,
+                TransitionActor::Qa => $this->isQaOf($user, $item),
             };
 
             if ($allowed) {
@@ -176,5 +176,14 @@ final class ItemPolicy
         }
 
         return false;
+    }
+
+    /**
+     * QA yang ditunjuk pada item, atau QA mana pun yang menjadi anggota project item.
+     */
+    private function isQaOf(User $user, Item $item): bool
+    {
+        return $user->hasRole(Role::Qa)
+            && ($item->qa_id === $user->id || $user->projects()->whereKey($item->project_id)->exists());
     }
 }
