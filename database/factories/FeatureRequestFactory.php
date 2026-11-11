@@ -34,6 +34,19 @@ class FeatureRequestFactory extends Factory
     }
 
     /**
+     * Hanya untuk menyiapkan data test; kode aplikasi memakai EscalateFeatureRequest.
+     */
+    public function awaitingChief(): static
+    {
+        return $this->state(fn (): array => [
+            'status' => FeatureRequestStatus::AwaitingChief,
+            'escalated_by' => User::factory()->manager(),
+            'escalated_at' => now(),
+            'escalation_note' => 'Perlu keputusan Chief.',
+        ]);
+    }
+
+    /**
      * Hanya untuk menyiapkan data test; kode aplikasi memakai Approve/RejectFeatureRequest.
      */
     public function rejected(): static

@@ -33,8 +33,25 @@ final class FeatureRequestPolicy
         return $user->is_active && $user->hasRole(Role::Manager);
     }
 
+    /** Review tahap pertama (Manager): setujui, tolak, atau teruskan ke Chief. */
     public function review(User $user, FeatureRequest $request): bool
     {
         return $this->viewReviewQueue($user);
+    }
+
+    public function escalate(User $user, FeatureRequest $request): bool
+    {
+        return $this->viewReviewQueue($user);
+    }
+
+    public function viewNeedApproval(User $user): bool
+    {
+        return $user->is_active && $user->hasRole(Role::Chief);
+    }
+
+    /** Keputusan akhir (Chief) untuk permintaan yang diteruskan Manager. */
+    public function chiefReview(User $user, FeatureRequest $request): bool
+    {
+        return $this->viewNeedApproval($user);
     }
 }

@@ -35,7 +35,7 @@ final class FeatureRequestController extends Controller
         $counts = (clone $base)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
 
         $requests = $base
-            ->with(['project:id,code,name', 'requester:id,name', 'reviewer:id,name', 'item.project:id,code'])
+            ->with(['project:id,code,name', 'requester:id,name', 'reviewer:id,name', 'escalator:id,name', 'item.project:id,code'])
             ->when($status !== null, fn ($q) => $q->where('status', $status))
             ->latest('id')
             ->paginate(15)
@@ -47,6 +47,7 @@ final class FeatureRequestController extends Controller
             'counts' => [
                 'all' => (int) $counts->sum(),
                 'pending' => (int) ($counts[FeatureRequestStatus::Pending->value] ?? 0),
+                'awaiting_chief' => (int) ($counts[FeatureRequestStatus::AwaitingChief->value] ?? 0),
                 'approved' => (int) ($counts[FeatureRequestStatus::Approved->value] ?? 0),
                 'rejected' => (int) ($counts[FeatureRequestStatus::Rejected->value] ?? 0),
             ],

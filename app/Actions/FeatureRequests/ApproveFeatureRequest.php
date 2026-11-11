@@ -17,6 +17,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * Menyetujui permintaan fitur: otomatis membuat task di backlog project terkait.
  * Pembuat task adalah pemohon agar jejak kepemilikan tetap benar.
+ *
+ * Tahap menentukan penyetuju: status `pending` oleh Manager, `awaiting_chief` (diteruskan
+ * Manager) oleh Chief.
  */
 final class ApproveFeatureRequest
 {
@@ -28,17 +31,23 @@ final class ApproveFeatureRequest
      */
     public function handle(FeatureRequest $request, User $reviewer, ?string $note = null): FeatureRequest
     {
-        Gate::forUser($reviewer)->authorize('review', $request);
+        $gate = Gate::forUser($reviewer);
 
-        return DB::transaction(function () use ($request, $reviewer, $note): FeatureRequest {
+        if (! $gate->any(['review', 'chiefReview'], $request)) {
+            throw new AuthorizationException;
+        }
+
+        return DB::transaction(function () use ($request, $reviewer, $note, $gate): FeatureRequest {
             $locked = FeatureRequest::query()
                 ->with(['project', 'requester'])
                 ->lockForUpdate()
                 ->findOrFail($request->getKey());
 
-            if (! $locked->isPending()) {
+            if (! $locked->isPending() && ! $locked->isAwaitingChief()) {
                 throw ValidationException::withMessages(['request' => 'Permintaan sudah diproses.']);
             }
+
+            $gate->authorize($locked->isAwaitingChief() ? 'chiefReview' : 'review', $locked);
 
             $item = $this->createItem->store($locked->project, $locked->requester, [
                 'type' => ItemType::Task->value,

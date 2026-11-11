@@ -1,7 +1,7 @@
 import type { EnumOption, Paginated, Priority, SelectOption } from '@/types';
 
 export type FeatureRequestKind = 'enhancement' | 'new_feature';
-export type FeatureRequestStatus = 'pending' | 'approved' | 'rejected';
+export type FeatureRequestStatus = 'pending' | 'awaiting_chief' | 'approved' | 'rejected';
 
 /** App\Http\Resources\FeatureRequestResource */
 export interface FeatureRequestRow {
@@ -18,7 +18,11 @@ export interface FeatureRequestRow {
     reviewed_at: string | null;
     created_at: string | null;
     item: { code: string; url: string } | null;
+    escalated_by: string | null;
+    escalated_at: string | null;
+    escalation_note: string | null;
     can_review: boolean;
+    can_escalate: boolean;
 }
 
 export interface FeatureRequestIndexPageProps {

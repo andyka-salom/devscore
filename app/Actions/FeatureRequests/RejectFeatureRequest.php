@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * Menolak permintaan fitur. Status `pending` oleh Manager, `awaiting_chief` oleh Chief.
+ */
 final class RejectFeatureRequest
 {
     /**
@@ -20,18 +23,24 @@ final class RejectFeatureRequest
      */
     public function handle(FeatureRequest $request, User $reviewer, string $reason): FeatureRequest
     {
-        Gate::forUser($reviewer)->authorize('review', $request);
+        $gate = Gate::forUser($reviewer);
+
+        if (! $gate->any(['review', 'chiefReview'], $request)) {
+            throw new AuthorizationException;
+        }
 
         if (trim($reason) === '') {
             throw ValidationException::withMessages(['reason' => 'Alasan penolakan wajib diisi.']);
         }
 
-        return DB::transaction(function () use ($request, $reviewer, $reason): FeatureRequest {
+        return DB::transaction(function () use ($request, $reviewer, $reason, $gate): FeatureRequest {
             $locked = FeatureRequest::query()->lockForUpdate()->findOrFail($request->getKey());
 
-            if (! $locked->isPending()) {
+            if (! $locked->isPending() && ! $locked->isAwaitingChief()) {
                 throw ValidationException::withMessages(['request' => 'Permintaan sudah diproses.']);
             }
+
+            $gate->authorize($locked->isAwaitingChief() ? 'chiefReview' : 'review', $locked);
 
             $locked->status = FeatureRequestStatus::Rejected;
             $locked->reviewed_by = $reviewer->id;

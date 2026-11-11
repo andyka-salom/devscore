@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\BugReportController;
+use App\Http\Controllers\BugReportReviewController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FeatureRequestController;
 use App\Http\Controllers\FeatureRequestReviewController;
@@ -11,6 +13,7 @@ use App\Http\Controllers\ItemController;
 use App\Http\Controllers\ItemTransitionController;
 use App\Http\Controllers\ItemTriageController;
 use App\Http\Controllers\KpiController;
+use App\Http\Controllers\NeedApprovalController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
@@ -62,7 +65,17 @@ Route::middleware('auth')->group(function (): void {
     Route::get('feature-requests/create', [FeatureRequestController::class, 'create'])->name('feature-requests.create');
     Route::post('feature-requests', [FeatureRequestController::class, 'store'])->name('feature-requests.store');
     Route::post('feature-requests/{featureRequest}/approve', [FeatureRequestReviewController::class, 'approve'])->name('feature-requests.approve');
+    Route::post('feature-requests/{featureRequest}/escalate', [FeatureRequestReviewController::class, 'escalate'])->name('feature-requests.escalate');
     Route::post('feature-requests/{featureRequest}/reject', [FeatureRequestReviewController::class, 'reject'])->name('feature-requests.reject');
+
+    Route::get('bug-reports', [BugReportController::class, 'index'])->name('bug-reports.index');
+    Route::get('bug-reports/create', [BugReportController::class, 'create'])->name('bug-reports.create');
+    Route::post('bug-reports', [BugReportController::class, 'store'])->name('bug-reports.store');
+    Route::post('bug-reports/{bugReport}/approve', [BugReportReviewController::class, 'approve'])->name('bug-reports.approve');
+    Route::post('bug-reports/{bugReport}/escalate', [BugReportReviewController::class, 'escalate'])->name('bug-reports.escalate');
+    Route::post('bug-reports/{bugReport}/reject', [BugReportReviewController::class, 'reject'])->name('bug-reports.reject');
+
+    Route::get('need-approval', [NeedApprovalController::class, 'index'])->name('need-approval.index');
 
     Route::get('kpi', [KpiController::class, 'index'])->name('kpi.index');
     Route::post('kpi/periods', [KpiController::class, 'close'])->name('kpi.periods.close');

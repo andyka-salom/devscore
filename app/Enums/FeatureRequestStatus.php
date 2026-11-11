@@ -7,6 +7,7 @@ namespace App\Enums;
 enum FeatureRequestStatus: string implements HasLabel
 {
     case Pending = 'pending';
+    case AwaitingChief = 'awaiting_chief';
     case Approved = 'approved';
     case Rejected = 'rejected';
 
@@ -14,6 +15,7 @@ enum FeatureRequestStatus: string implements HasLabel
     {
         return match ($this) {
             self::Pending => 'Menunggu',
+            self::AwaitingChief => 'Menunggu Chief',
             self::Approved => 'Disetujui',
             self::Rejected => 'Ditolak',
         };

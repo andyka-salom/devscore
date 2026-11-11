@@ -41,6 +41,8 @@ export interface NavAccess {
     qa: number | null;
     available: number | null;
     featureRequests: number | boolean | null;
+    bugReports: number | boolean | null;
+    needApproval: number | null;
     kpi: boolean;
     settings: boolean;
     users: boolean;

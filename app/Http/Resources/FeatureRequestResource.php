@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * Relasi project, requester, reviewer, item wajib di-eager load.
+ * Relasi project, requester, reviewer, escalator, item wajib di-eager load.
  *
  * @mixin FeatureRequest
  */
@@ -37,7 +37,12 @@ final class FeatureRequestResource extends JsonResource
                 'code' => $this->item->code,
                 'url' => route('items.show', $this->item),
             ],
-            'can_review' => $this->isPending() && $request->user()?->can('review', $this->resource) === true,
+            'escalated_by' => $this->escalator?->name,
+            'escalated_at' => $this->escalated_at?->toIso8601String(),
+            'escalation_note' => $this->escalation_note,
+            'can_review' => ($this->isPending() && $request->user()?->can('review', $this->resource) === true)
+                || ($this->isAwaitingChief() && $request->user()?->can('chiefReview', $this->resource) === true),
+            'can_escalate' => $this->isPending() && $request->user()?->can('escalate', $this->resource) === true,
         ];
     }
 }

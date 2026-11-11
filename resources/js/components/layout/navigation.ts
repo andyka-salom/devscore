@@ -1,4 +1,5 @@
 import {
+    BadgeCheck,
     ChartColumnBig,
     ClipboardCheck,
     ClipboardList,
@@ -10,6 +11,7 @@ import {
     Settings,
     ShieldCheck,
     Bug,
+    BugPlay,
     CheckSquare,
     UserCog,
     type LucideIcon,
@@ -43,12 +45,14 @@ export const navigation: NavSection[] = [
             { title: 'Task List', href: '/items?type=task', icon: CheckSquare },
             { title: 'Bug List', href: '/items?type=bug', icon: Bug },
             { title: 'Test Case', href: '/test-cases', icon: ClipboardList },
-            { title: 'Permintaan Fitur', href: '/feature-requests', icon: Lightbulb, accessKey: 'featureRequests' },
+                    { title: 'Permintaan Fitur', href: '/feature-requests', icon: Lightbulb, accessKey: 'featureRequests' },
+            { title: 'Temuan Bug', href: '/bug-reports', icon: BugPlay, accessKey: 'bugReports' },
         ],
     },
     {
         title: 'Antrian',
         items: [
+            { title: 'Need Approval', href: '/need-approval', icon: BadgeCheck, accessKey: 'needApproval' },
             { title: 'Task Tersedia', href: '/items/available', icon: Hand, accessKey: 'available' },
             { title: 'Antrian QA', href: '/qa', icon: ClipboardCheck, accessKey: 'qa' },
             { title: 'Approval', href: '/approval', icon: ShieldCheck, accessKey: 'approval' },

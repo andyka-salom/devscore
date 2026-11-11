@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Enums\BugReportStatus;
 use App\Enums\FeatureRequestStatus;
 use App\Http\Resources\EnumOption;
+use App\Models\BugReport;
 use App\Models\FeatureRequest;
 use App\Models\Item;
 use App\Models\KpiPeriod;
@@ -66,6 +68,17 @@ class HandleInertiaRequests extends Middleware
                 ? ($user->can('viewReviewQueue', FeatureRequest::class)
                     ? FeatureRequest::query()->where('status', FeatureRequestStatus::Pending)->count()
                     : true)
+                : null,
+            // Sama seperti permintaan fitur: Manager melihat jumlah yang menunggu.
+            'bugReports' => $user->can('viewAny', BugReport::class)
+                ? ($user->can('viewReviewQueue', BugReport::class)
+                    ? BugReport::query()->where('status', BugReportStatus::Pending)->count()
+                    : true)
+                : null,
+            // Chief: jumlah fitur + bug yang diteruskan Manager dan menunggu keputusannya.
+            'needApproval' => $user->can('viewNeedApproval', FeatureRequest::class)
+                ? FeatureRequest::query()->where('status', FeatureRequestStatus::AwaitingChief)->count()
+                    + BugReport::query()->where('status', BugReportStatus::AwaitingChief)->count()
                 : null,
             'kpi' => $user->can('viewAny', KpiPeriod::class),
             'settings' => $user->can('viewSettings', KpiPeriod::class),

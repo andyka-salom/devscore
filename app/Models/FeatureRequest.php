@@ -21,6 +21,9 @@ use Illuminate\Support\Carbon;
  * @property FeatureRequestStatus $status
  * @property Priority $priority
  * @property Carbon|null $reviewed_at
+ * @property int|null $escalated_by
+ * @property Carbon|null $escalated_at
+ * @property string|null $escalation_note
  */
 #[Fillable(['project_id', 'requested_by', 'kind', 'title', 'description', 'priority'])]
 class FeatureRequest extends Model
@@ -38,6 +41,7 @@ class FeatureRequest extends Model
             'status' => FeatureRequestStatus::class,
             'priority' => Priority::class,
             'reviewed_at' => 'datetime',
+            'escalated_at' => 'datetime',
         ];
     }
 
@@ -73,8 +77,21 @@ class FeatureRequest extends Model
         return $this->belongsTo(Item::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function escalator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'escalated_by');
+    }
+
     public function isPending(): bool
     {
         return $this->status === FeatureRequestStatus::Pending;
+    }
+
+    public function isAwaitingChief(): bool
+    {
+        return $this->status === FeatureRequestStatus::AwaitingChief;
     }
 }

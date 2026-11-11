@@ -1,18 +1,18 @@
-import { Link, router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
 import { DataTable, type DataTableColumn } from '@/components/data-table';
 import { Pagination } from '@/components/pagination';
+import { ReviewDialog, type ReviewMode } from '@/components/review-dialog';
 import { SegmentedTabs } from '@/components/segmented-tabs';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/input';
 import { useQueryFilters } from '@/hooks/use-query-filters';
 import AppLayout from '@/layouts/app-layout';
 import { formatDate } from '@/lib/format';
+import { reviewDescription } from '@/lib/review-copy';
 import type { Priority } from '@/types';
 import type {
     FeatureRequestIndexPageProps,
@@ -22,6 +22,7 @@ import type {
 
 const STATUS_TONE: Record<FeatureRequestStatus, BadgeTone> = {
     pending: 'warning',
+    awaiting_chief: 'info',
     approved: 'success',
     rejected: 'danger',
 };
@@ -32,66 +33,6 @@ const PRIORITY_TONE: Record<Priority, BadgeTone> = {
     high: 'warning',
     critical: 'danger',
 };
-
-type ReviewMode = 'approve' | 'reject';
-
-function ReviewDialog({ request, mode, onClose }: { request: FeatureRequestRow; mode: ReviewMode; onClose: () => void }) {
-    const [note, setNote] = useState('');
-    const [error, setError] = useState<string | undefined>();
-    const [processing, setProcessing] = useState(false);
-    const approving = mode === 'approve';
-
-    const submit = () => {
-        if (!approving && note.trim() === '') {
-            setError('Alasan penolakan wajib diisi.');
-            return;
-        }
-
-        router.post(
-            `/feature-requests/${request.id}/${mode}`,
-            { note },
-            {
-                preserveScroll: true,
-                onStart: () => setProcessing(true),
-                onFinish: () => setProcessing(false),
-                onSuccess: onClose,
-                onError: (errors) => setError(errors.note ?? errors.reason ?? errors.request),
-            },
-        );
-    };
-
-    return (
-        <Dialog
-            open
-            onClose={onClose}
-            title={approving ? 'Setujui permintaan' : 'Tolak permintaan'}
-            description={
-                approving
-                    ? `“${request.title}” akan otomatis dibuat sebagai task di Backlog ${request.project.name}.`
-                    : `“${request.title}” akan ditolak dan tidak masuk ke task.`
-            }
-        >
-            <div className="space-y-3">
-                <Textarea
-                    rows={3}
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder={approving ? 'Catatan (opsional)' : 'Alasan penolakan'}
-                    aria-invalid={!!error}
-                />
-                {error && <p className="text-destructive text-sm">{error}</p>}
-                <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={onClose}>
-                        Batal
-                    </Button>
-                    <Button variant={approving ? 'default' : 'destructive'} disabled={processing} onClick={submit}>
-                        {approving ? 'Setujui' : 'Tolak'}
-                    </Button>
-                </div>
-            </div>
-        </Dialog>
-    );
-}
 
 export default function FeatureRequestIndex({ requests, filters, counts, can }: FeatureRequestIndexPageProps) {
     const updateFilters = useQueryFilters(filters);
@@ -126,6 +67,12 @@ export default function FeatureRequestIndex({ requests, filters, counts, can }: 
             cell: (row) => (
                 <div className="space-y-1">
                     <Badge tone={STATUS_TONE[row.status.value]}>{row.status.label}</Badge>
+                    {row.escalated_by && (
+                        <p className="text-muted-foreground line-clamp-2 text-xs">
+                            Diteruskan {row.escalated_by}
+                            {row.escalation_note ? `: ${row.escalation_note}` : ''}
+                        </p>
+                    )}
                     {row.item && (
                         <Link href={row.item.url} className="text-primary block text-xs hover:underline">
                             Task {row.item.code}
@@ -142,13 +89,18 @@ export default function FeatureRequestIndex({ requests, filters, counts, can }: 
         {
             id: 'actions',
             header: <span className="sr-only">Aksi</span>,
-            headerClassName: 'w-44',
+            headerClassName: 'w-64',
             cell: (row) =>
                 row.can_review ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <Button size="sm" onClick={() => setReview({ request: row, mode: 'approve' })}>
                             Setujui
                         </Button>
+                        {row.can_escalate && (
+                            <Button size="sm" variant="outline" onClick={() => setReview({ request: row, mode: 'escalate' })}>
+                                Teruskan ke Chief
+                            </Button>
+                        )}
                         <Button size="sm" variant="outline" onClick={() => setReview({ request: row, mode: 'reject' })}>
                             Tolak
                         </Button>
@@ -173,7 +125,8 @@ export default function FeatureRequestIndex({ requests, filters, counts, can }: 
                     <div>
                         <CardTitle>Permintaan Fitur</CardTitle>
                         <CardDescription>
-                            Usulan fitur tambahan atau baru per project. Yang disetujui Manager otomatis menjadi task.
+                            Usulan fitur tambahan atau baru per project. Yang disetujui otomatis menjadi task; Manager
+                            dapat meneruskan permintaan tertentu ke Chief untuk keputusan akhir.
                         </CardDescription>
                     </div>
                     <SegmentedTabs
@@ -182,6 +135,7 @@ export default function FeatureRequestIndex({ requests, filters, counts, can }: 
                         tabs={[
                             { value: 'all', label: 'Semua' },
                             { value: 'pending', label: 'Menunggu', count: counts.pending },
+                            { value: 'awaiting_chief', label: 'Menunggu Chief', count: counts.awaiting_chief },
                             { value: 'approved', label: 'Disetujui' },
                             { value: 'rejected', label: 'Ditolak' },
                         ]}
@@ -199,7 +153,20 @@ export default function FeatureRequestIndex({ requests, filters, counts, can }: 
                 </CardContent>
             </Card>
 
-            {review && <ReviewDialog request={review.request} mode={review.mode} onClose={() => setReview(null)} />}
+            {review && (
+                <ReviewDialog
+                    baseUrl={`/feature-requests/${review.request.id}`}
+                    mode={review.mode}
+                    subject="permintaan"
+                    description={reviewDescription(
+                        'feature',
+                        review.mode,
+                        review.request.title,
+                        review.request.project.name,
+                    )}
+                    onClose={() => setReview(null)}
+                />
+            )}
         </AppLayout>
     );
 }
